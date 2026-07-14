@@ -1,15 +1,19 @@
 # Counterexample Suite — Adversarial Hardening Against `baselines/defense`
 
 Per Milestone 2 step: deliberately try to build counters/exploits against our own
-current champion (`baselines/defense`), document each attempt (mechanism, result,
-realism), and only patch if a real weakness is found. Tags: **Verified / Strongly
-supported / Hypothesis / Rejected**, consistent with all other docs in this repo.
+current champion, document each attempt (mechanism, result, realism), and only patch
+if a real weakness is found. Tags: **Verified / Strongly supported / Hypothesis /
+Rejected**, consistent with all other docs in this repo.
 
-**Honesty note up front:** both attempts below **failed to beat `defense`** (15-0 to
-defense in both cases). That is itself the finding — it does **not** mean `defense`
-is unbeatable, only that these two specific, plausible attack vectors did not work
-against it locally, with this engine/config, in the time available. See section 3
-for what this does and doesn't prove.
+**Honesty note up front (updated after the second Milestone 2 pass):** the two
+adversarial *offense* attempts in sections 1-2 below both **failed to beat
+`baselines/defense`** (15-0 in both cases). Three more prior-art-derived opponents in
+section 5 below *also* failed to beat it (15-0 each). But section 6
+(`opponents/turtle_survivor`) **did** find a real weakness — `defense` lost **0-10**,
+every single game, to a purely passive opponent, purely on the Verified compute-time
+tie-break. That weakness was patched (partially — see section 6.3) and is the reason
+this doc now also covers a champion change; see `docs/MILESTONE_2_REPORT.md` for the
+full narrative.
 
 ## 1. Attempt 1: `opponents/middle_rush_exploit`
 
@@ -65,40 +69,120 @@ the reactive-rebuild layer's cap was not the bottleneck — splitting weakened t
 opponent's own per-lane MP (mirroring the classic "spread thin" failure mode) more
 than it stressed `defense`'s repair budget.
 
-## 3. What this does and does not prove
+## 3. What sections 1-2 do and do not prove
 
-- **Strongly supported:** across everything tested so far — the Milestone 1 round
-  robin (120 games), the 3-archetype opponent corpus (45 games), and these two
-  targeted adversarial probes (30 games) — `defense` has a **135-0 record across
-  135 total local games against 8 distinct opponents** (1 official starter bot, 2 of
-  our own contrasting baselines, 3 diverse archetypes, 2 hand-built adversarial
-  probes), 0 crashes, 0 harness errors throughout. This is a real, repeatedly
-  corroborated result, not a fluke of one lucky matchup.
+- **Strongly supported:** across everything tested in the first Milestone 2 pass —
+  the Milestone 1 round robin (120 games), the 3-archetype opponent corpus
+  (45 games), and these two targeted adversarial probes (30 games) — `defense` had a
+  **135-0 record across 135 total local games against 8 distinct opponents**, 0
+  crashes, 0 harness errors throughout.
 - **Explicitly not proven:** that `defense` is unbeatable, or that no counter
   exists. All 8 opponents were built by this same workstream (or are the one
   official starter bot); none are an independently-written, actively-competitive
-  human team's algo. **This is the same class of gap already flagged in
-  `docs/MILESTONE_1_REPORT.md` section 7** — a shared blind spot between our
-  opponent-design instincts and our own baseline's actual weaknesses cannot be
-  fully ruled out just by us failing to find a counter ourselves, especially with
-  only ~2 focused hardening attempts (limited by time, not by these being the only
-  ideas worth trying).
+  human team's algo — the same class of gap flagged in `docs/MILESTONE_1_REPORT.md`
+  section 7. Sections 5-6 below close part of that gap using
+  `docs/STRATEGIC_PRIOR_ART_REPORT.md`'s ranked hypotheses instead of more
+  self-designed variants, and section 6 shows the gap was real: a genuinely
+  different (if deliberately extreme) opponent design *did* find a weakness that 8
+  self-built-or-official opponents had missed.
 - **Ideas not yet tried** (explicitly deferred, not rejected): a DEMOLISHER-focused
   (not SCOUT-focused) middle rush; an attack specifically timed to hit before
-  `defense`'s turret upgrades complete (its `upgrade_core` call has no explicit
-  early-game gating, but upgrades cost SP that's also being spent on width, so
-  there may be a real early-turn window); a maze that specifically routes around
-  `defense`'s exact known turret coordinates rather than going straight up the
-  middle; and simply feeding `defense`'s own replay data into a scripted opponent
-  that has "seen" its layout in advance (which would be a fair test of
-  "sustained ladder play against a memorized opponent," not tested here since we
-  only ever play fresh matches).
+  `defense`'s turret upgrades complete; a maze that specifically routes around
+  `defense`'s exact known turret coordinates; and feeding `defense`'s own replay
+  data into a scripted opponent that has "seen" its layout in advance.
 
-## 4. Outcome
+## 5. Second pass: 3 more opponents from `docs/STRATEGIC_PRIOR_ART_REPORT.md`
 
-No patch was made to `baselines/defense` as a result of this pass, because no
-working counter was found to patch against. Per the standing instruction to never
-overwrite the last known-good submission without a benchmarked improvement, the
-`milestone1-fallback` tag and `submissions/emergency_fallback/` package are
-unchanged. This section should be revisited if/when a real counter is found in a
-future hardening pass.
+Per the explicit follow-up instruction, these three specifically target prior-art
+hypotheses **not** covered by the first 3-archetype corpus (`funnel_maze`,
+`adaptive_reactive`, `burst_hoarder`) or the two adversarial probes above. Novelty
+analysis (in our own words, as requested) and result for each:
+
+| Opponent | Prior-art hypothesis re-derived | Genuinely novel attack surface? | Result vs `defense` |
+|---|---|---|---|
+| `opponents/escorted_combined_arms` | #5: cheap screen + DEMOLISHER structure-cracker, re-derived from *current* Verified unit stats (`docs/GAME_SPEC.md` 2.2), not historical ones | **Yes** — none of our other opponents stagger a screen wave one full turn ahead of a following strike group on the same lane, or pair it with a SUPPORT placement. Distinct timing mechanism from `burst_hoarder` (simultaneous burst) and `multi_lane_saturation` (simultaneous spread). | **Rejected as an effective counter.** 15/15 games lost (`experiments/results/*_defense_vs_escorted_combined_arms.jsonl`), turn ~10, 0 crashes. |
+| `opponents/sunk_cost_recipe_switcher` | #3: abort a failing attack recipe instead of repeating it, using multi-turn realized-value tracking | **Yes** — this is a recipe-*level*, multi-turn decision (track breach credit over an evaluation window, switch after repeated failure), qualitatively different from the per-turn cheapest-lane heuristic every other opponent/baseline in this repo uses instead. Confirmed working as designed in a smoke test (observed it actually switch recipes after 2 consecutive failures). | **Rejected as an effective counter.** 15/15 games lost (`experiments/results/*_defense_vs_sunk_cost_recipe_switcher.jsonl`), turn ~10, 0 crashes. |
+| `opponents/double_funnel_maze` | #6: a second, structurally distinct maze/path-control shape | **Partially overlapping** with `opponents/funnel_maze` in spirit (both are static wall corridors), but **structurally different**: two symmetric corridors from both flanks converging on a shared *central* kill zone, with alternating attack sides, versus one static corridor on one side only. Tests a center-of-board blind spot and lane-alternation specifically, which the single-corridor version cannot. | **Rejected as an effective counter.** 15/15 games lost (`experiments/results/*_defense_vs_double_funnel_maze.jsonl`), turn ~10-12, 0 crashes. |
+
+All three: 0 crashes either side, consistent ~turn-10-12 losses for the attacker,
+matching the pattern from section 1-2's probes — `defense`'s static core plus
+reactive layer handles all of these within the first ~10 turns before any of the
+new opponents' more elaborate multi-turn mechanisms (escort timing, recipe
+switching, dual corridors) have a chance to matter.
+
+## 6. `opponents/turtle_survivor` — the endgame-policy investigation found a REAL weakness
+
+Per the Milestone 2 "health-preservation vs. damage-race" investigation: rather than
+wait for a near-turn-cap board state to arise naturally (none of the ~10-20-turn
+games above get anywhere close to turn 100), we built a purely passive,
+zero-offense, maximal-defense test fixture (`opponents/turtle_survivor`) specifically
+to force long games, as the closest available local substitute for "constructing the
+relevant board state directly."
+
+### 6.1 Result: `defense` lost 0-10, every game, at turn 99, tied 40.0-40.0 on health
+
+`experiments/results/20260715-013634_defense_vs_turtle_survivor.jsonl` — 10/10 games
+run to the Verified turn-100 cap, both players finishing with **identical** health
+(40.0-40.0, i.e. neither side ever meaningfully damaged the other), and
+`turtle_survivor` won *every single one*, regardless of which seat (p1/p2) it played.
+
+### 6.2 Root cause: **Verified**, not hypothesis — the compute-time tie-break
+
+The replay format's `endStats.playerN.total_computation_time` field (ms) gives this
+directly, no inference needed:
+
+| Match | `defense` compute (ms) | `turtle_survivor` compute (ms) |
+|---|---|---|
+| seat 1 | 1827 | 712 |
+| seat 2 (swapped) | 1821 | 730 |
+
+Per the Verified tie-break rule (`docs/GAME_SPEC.md` 4.3): tied health is broken by
+**lower cumulative compute time**. `defense` was using ~2.5x `turtle_survivor`'s
+compute across a full game and lost the tie-break every time. A throwaway diagnostic
+probe (disabling `opportunistic_offense` entirely) dropped `defense`'s compute to
+~618ms, matching `turtle_survivor` almost exactly — isolating
+`least_damage_spawn_location`'s per-option pathfinding calls as ~95% of the excess
+cost. This is a genuine weakness in `defense`'s own claimed design intent (its
+docstring already claimed to be "kept computationally cheap... free insurance for
+the tie-break" — this benchmark **disproves that claim** as stated; it was cheap
+relative to the *time budget*, not cheap relative to *what a much simpler passive
+opponent needs*.)
+
+### 6.3 Patch: `baselines/defense_v3_lowcompute` — a real, partial fix
+
+See the `baselines/defense_v3_lowcompute/algo_strategy.py` docstring for the full
+list of 4 concrete changes (cache+throttle the lane-choice heuristic over fewer
+options, hoist a repeated object construction out of a hot loop, skip a redundant
+second JSON parse on the common empty-breach case, and a "stalemate breaker" that
+commits real force if never breached by turn 40). Measured effect:
+
+- Compute time vs `turtle_survivor`: **~1827ms → ~750-800ms** (turtle_survivor
+  itself runs ~700-730ms) — most, not all, of the gap closed.
+- Win rate vs `turtle_survivor`: **0/10 (0%) → 3/16 (~19%)** across two independent
+  batches run with the identical final patch (6 games: 1 win; 10 games: 2 wins) —
+  small-sample, stated honestly, but the wins are not just tie-break luck: at least
+  one win was a genuine health-based win (32 vs 40 final HP) where the
+  "stalemate breaker" mechanism actually broke through `turtle_survivor`'s defense.
+- **Full regression check (the acceptance-discipline step): 0 regressions.**
+  `defense_v3_lowcompute` still won **110/110 (100%)** across all 11 previously-
+  tested opponents (the official starter bot, `rush`, `hybrid`, and all 8
+  `opponents/` archetypes/probes, 10 games each) — see
+  `experiments/results/20260715-0[15-20]*_v3_vs_*.jsonl`. 0 crashes anywhere.
+- **Honest limitation:** this is a **partial** fix, not a complete one.
+  `defense_v3_lowcompute` still loses the large majority of games against this
+  specific, deliberately-extreme, zero-offense turtle fixture. We consider this an
+  acceptable residual risk (see `docs/MILESTONE_2_REPORT.md` section on why) rather
+  than something to keep iterating on indefinitely, given `turtle_survivor` is not a
+  realistic model of a competitive human opponent (any team that never attacks
+  cannot win against most opponents either, only against ours specifically, via this
+  one specific tie-break quirk).
+
+## 7. Outcome
+
+`baselines/defense_v3_lowcompute` was **accepted as the new champion** and tagged
+`milestone2-champion` (see `docs/MILESTONE_2_REPORT.md`), because it strictly
+dominates `baselines/defense`: identical 100% win rate against every opponent
+`defense` already beat, plus a real (if partial) improvement against the one
+opponent that exposed a genuine weakness. Per the standing instruction, the
+`milestone1-fallback` tag and `submissions/emergency_fallback/` package remain
+**unchanged** as a safe rollback point regardless.
