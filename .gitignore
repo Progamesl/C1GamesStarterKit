@@ -23,4 +23,5 @@ dist/*
 !dist/.gitkeep
 
 *.zip
+!submissions/**/*.zip
 */.idea/*

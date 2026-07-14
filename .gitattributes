@@ -2,6 +2,8 @@
 
 *.jar binary
 
+*.zip binary
+
 *.exe binary
 
 *scripts/zipalgo_mac binary
