@@ -35,13 +35,35 @@ SEED_RE = re.compile(r"Random seed:\s*(\d+)")
 
 
 def _find_java():
-    """Prefer a JAVA_HOME set up by tools/setup_java.sh; fall back to PATH java."""
+    """Prefer a JAVA_HOME set up by tools/setup_java.sh; fall back to PATH java;
+    fall back further to auto-discovering a JDK under tools/ (in case JAVA_HOME
+    wasn't sourced in this particular shell -- see tools/setup_java.sh)."""
     java_home = os.environ.get("JAVA_HOME")
     if java_home:
         candidate = os.path.join(java_home, "bin", "java")
         if os.path.isfile(candidate):
             return candidate
-    return shutil.which("java") or "java"
+
+    path_java = shutil.which("java")
+    if path_java:
+        try:
+            probe = subprocess.run([path_java, "-version"], capture_output=True, timeout=5)
+            if probe.returncode == 0:
+                return path_java
+        except Exception:
+            pass  # macOS java stub with no real JRE -- fall through
+
+    tools_dir = os.path.join(REPO_ROOT, "tools")
+    if os.path.isdir(tools_dir):
+        for entry in sorted(os.listdir(tools_dir)):
+            if entry.startswith("jdk-"):
+                for candidate in (
+                    os.path.join(tools_dir, entry, "Contents", "Home", "bin", "java"),  # macOS
+                    os.path.join(tools_dir, entry, "bin", "java"),  # linux
+                ):
+                    if os.path.isfile(candidate):
+                        return candidate
+    return "java"
 
 
 JAVA_BIN = _find_java()
