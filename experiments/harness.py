@@ -138,7 +138,11 @@ def run_single_match(algo1_dir, algo2_dir, match_id, timeout_s=180):
     result["p2_crashed"] = bool(re.search(r"crashed bootup", combined_log, re.I)) and "AlgoIndex 1" in combined_log
     result["any_crash_detected"] = bool(re.search(r"crashed bootup", combined_log, re.I))
 
-    turn_matches = re.findall(r"Performing turn (\d+) of your custom algo strategy", combined_log)
+    # Different algo_strategy.py implementations print different per-turn debug
+    # strings (the starter bot's "Performing turn N of your custom algo strategy",
+    # our baselines' "<NAME> turn N", etc). Match generically on any "turn N" to
+    # stay useful across all algos in this repo without hardcoding each one.
+    turn_matches = re.findall(r"[Tt]urn (\d+)\b", combined_log)
     result["last_turn_seen"] = max((int(t) for t in turn_matches), default=None)
 
     after_replays = set(os.listdir(REPLAYS_DIR)) if os.path.isdir(REPLAYS_DIR) else set()

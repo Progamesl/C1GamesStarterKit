@@ -2,6 +2,10 @@
 *.replay
 *__pycache__*
 
+# Engine writes a per-algo stderr dump named errorFile<n><timestamp>.txt directly
+# into the algo's own directory on each local match run.
+errorFile*.txt
+
 # Locally-downloaded JDK used to run engine.jar (large binary, redownload via tools/setup_java.sh)
 tools/jdk-*/
 tools/*.tar.gz
