@@ -34,6 +34,44 @@ as certain unless tagged Verified with a citation.
   install` before executing an uploaded algo). We did not find a
   `requirements.txt` anywhere in the repo.
 
+### 1.1 Milestone 3 addition: **Verified** local reproduction of a `run.sh` permission-loss bug in the official `scripts/zipalgo_mac` packaging tool
+
+While doing this milestone's fresh-extraction submission verification, we found
+that zipping an algo with the starter kit's own official `scripts/zipalgo_mac`
+tool, exactly as documented, produces a zip in which `run.sh` **loses its
+executable permission bit** (mode `0o100644`, i.e. `rw-r--r--`, instead of
+`0o100755`). Re-extracting that exact zip into a clean directory with a plain
+`unzip` and running a real local match reproduces a genuine engine-level crash:
+
+```
+Algo Crashed. Crash: true !processIsAlive: null
+java.io.IOException: error=13, Permission denied
+AlgoIndex 0 crashed bootup: .../run.sh
+```
+
+This is **not specific to one algo** — we confirmed the same permission loss in
+the already-packaged `submissions/milestone2_champion/*.zip` from last milestone
+too, so this is a property of the packaging tool itself, not something introduced
+by a particular algo's files.
+
+**What we could NOT verify (no portal access, per section 4 below):** whether the
+actual tournament submission portal's upload/extraction flow restores or ignores
+this permission bit server-side (plausible — many upload pipelines normalize
+permissions or invoke the entry point a different way — in which case this is a
+non-issue for real submissions), or whether it fails exactly like our local
+`unzip` did. **Hypothesis, not Verified, either way; treat as an open risk.**
+
+**Mitigation shipped starting this milestone:** every submission package from
+`submissions/milestone3_champion/` onward includes an alternative zip built with
+the system `zip` tool (which does preserve unix permission bits by default),
+verified via the identical fresh-extraction test to boot with no manual `chmod`
+needed, plus a raw unzipped folder option (permission bit already set) as the
+safest fallback if the portal accepts a folder directly. See
+`submissions/milestone3_champion/README.md` for the exact repro and verification
+steps. Earlier packages (`emergency_fallback`, `milestone2_champion`) were left
+as-is (not the currently recommended submission) but this finding applies to them
+too if they were ever used instead.
+
 ## 2. Runtime / resource limits
 
 - **Verified** (`game-configs.json` `timingAndReplay`, cross-checked against

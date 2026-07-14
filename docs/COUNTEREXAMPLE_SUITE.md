@@ -177,7 +177,7 @@ commits real force if never breached by turn 40). Measured effect:
   cannot win against most opponents either, only against ours specifically, via this
   one specific tie-break quirk).
 
-## 7. Outcome
+## 7. Outcome (Milestone 2)
 
 `baselines/defense_v3_lowcompute` was **accepted as the new champion** and tagged
 `milestone2-champion` (see `docs/MILESTONE_2_REPORT.md`), because it strictly
@@ -186,3 +186,74 @@ dominates `baselines/defense`: identical 100% win rate against every opponent
 opponent that exposed a genuine weakness. Per the standing instruction, the
 `milestone1-fallback` tag and `submissions/emergency_fallback/` package remain
 **unchanged** as a safe rollback point regardless.
+
+## 8. Milestone 3: root-causing the residual `turtle_survivor` loss rate further
+
+Full narrative and numbers in `docs/MILESTONE_3_REPORT.md`; this section covers the
+adversarial-countersearch piece specifically, in the same format as sections 1-2/5
+above.
+
+### 8.1 Root cause (Verified, turn-by-turn evidence, not just aggregates)
+
+Direct replay inspection (frame-level unit-health tracking by `unit_id`, not just
+`endStats` aggregates) of `defense_v3_lowcompute` vs `turtle_survivor` losses shows
+the champion **does** mount real, substantial attacks throughout the game — several
+of `turtle_survivor`'s front-row WALLs were tracked from 75 HP down into single
+digits, and some were fully destroyed and rebuilt more than once
+(`baselines/defense_v3_lowcompute/algo_strategy.py`'s `dynamic_resource_destroyed:
+771.0` in one traced game — every bit of that 771 MP-worth of committed force was
+eventually destroyed, but plenty of it did real damage first). So "never commits to
+offense" is **Rejected** as the root cause.
+
+The **Verified** root cause instead: `on_turn`'s `ahead = my_health >=
+enemy_health` treats an exact tie as "ahead," entering endgame-preserve mode (all
+offense suppressed, MP spent only 3/turn on interceptors) for the entire turns
+81-99 window even when the game is merely tied, not won. Replay MP-stat tracking
+across every checked loss shows **~55-57 MP sitting completely idle at turn 99** as
+a direct result — a large, wasted resource at exactly the point where it would
+matter most.
+
+### 8.2 Fix and direct test of the "commit harder" hypothesis
+
+`baselines/defense_v4_tiebreak` splits the check into strict `ahead` (`>`) and an
+explicit tied-near-cap `all_in_tied_strike` mode (commits 100% of available MP,
+every turn, no gating) — directly testing the requested hypothesis: "opponent isn't
+attacking and we're tied near the cap → commit to a decisive breach attempt."
+
+**Result: the hypothesis is Rejected as sufficient, even though the mechanism it
+targets is real.** Confirmed via replay MP tracking that the fix works exactly as
+designed (idle MP at turn 99 drops from ~56 to ~17 when this mode engages), and
+confirmed via two further variants (moving the all-in threshold from turn 80 to
+turn 50, i.e. nearly doubling the commitment window) that win rate against
+`turtle_survivor` does **not** improve with more turns of commitment either (2/10
+at turn-80 threshold, 2/10 at turn-50 threshold — same rate). The bottleneck is
+economic/structural, not a matter of committing sooner or harder: `turtle_survivor`
+was deliberately built with 12 overlapping upgraded turrets plus two full-width
+150 HP wall layers, and our MP income within any realistic window cannot reliably
+field enough simultaneous force to punch all the way through that specific,
+deliberately-extreme density. See `docs/MILESTONE_3_REPORT.md` section 2 for the
+full numeric trail.
+
+### 8.3 Adversarial countersearch: 2 new opponents built to exploit `defense_v4_tiebreak` specifically
+
+| Opponent | Targeted weakness | Result vs `defense_v4_tiebreak` |
+|---|---|---|
+| `opponents/lategame_defector` | The new `all_in_tied_strike` mode spends 100% of MP on offense and **zero** on defensive interceptors — unlike the old preserve-mode it replaced. Plays an exact `turtle_survivor` clone to bait this mode, then defects to a real maximal scout/demolisher surge from turn 90 onward, aiming to land free damage while we're not screening. | **Rejected as an effective counter — 10/10 lost by the attacker (0-10 for `lategame_defector`, `experiments/results/*_v4_vs_lategame_defector_clean.jsonl`).** `defense_v4_tiebreak`'s own health never dropped below 40.0 in any of the 10 games — the static turret/wall core alone was sufficient without interceptor screening. As a bonus, `lategame_defector`'s late-surge pathfinding is uncached (unlike ours), making it 60-140ms *slower* than us in every single game measured — it loses the compute tie-break too, in the ties it didn't lose outright on health. |
+| `opponents/single_leak_turtle` | `ever_breached` is a permanent, one-way flag; a single real breach anywhere, anytime, disables the `_stalemate_breaker` (turns 40-80) for the rest of the game, forever, even if the opponent immediately reverts to pure turtle play. | **No measurable exploit found.** A single cheap probe SCOUT at turn 1, then an exact `turtle_survivor` clone for the rest of the game: **3/10 (30%)** win rate for us — numerically at or above the plain-`turtle_survivor` baseline (3/20, 15%), not below it, though n=10 is too small to call this a real improvement rather than noise. Directionally, no evidence this specific flag is currently exploitable. |
+
+Both countersearch attempts **failed** to find a new exploitable regression in
+`defense_v4_tiebreak`. This is an honest negative result for the adversarial round,
+not a claim that no exploit exists anywhere in the design — see
+`docs/MILESTONE_3_REPORT.md` section 4 for what remains untested.
+
+## 9. Outcome (Milestone 3)
+
+`baselines/defense_v4_tiebreak` is **accepted as the new champion** and tagged
+`milestone3-champion`: 0 regressions across the full 11-opponent suite (110/110),
+plus it wins both new adversarial-countersearch matchups built specifically against
+it. It fixes a real, verified bug (idle MP from a tie-vs-ahead conflation) with
+sound defensive rationale even though — stated plainly, not papered over — it does
+**not** close the targeted `turtle_survivor` gap: win rate stayed at 3/20 (15%),
+statistically indistinguishable from `defense_v3_lowcompute`'s 3/16 (~19%).
+`milestone1-fallback` and `milestone2-champion` both remain **unchanged** as safe
+rollback points.
