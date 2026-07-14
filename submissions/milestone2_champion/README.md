@@ -34,18 +34,42 @@ full numbers, methodology, and the honest limitation (this is a partial fix, not
 complete one — `turtle_survivor` is a deliberately extreme, unrealistic fixture, and
 the champion still loses to it more often than not).
 
+## Milestone 3/4 compliance update: `run.sh` executable-bit race condition
+
+**A later milestone found and root-caused a real bug affecting `defense_v3_lowcompute.zip`
+(and every other zip produced by the official `scripts/zipalgo_mac` tool):** the
+zip stores `run.sh` without its executable bit (`0o100644` instead of
+`0o100755`). Decompiling `engine.jar`'s `SimpleAlgoPlayer.class` shows the engine
+has a self-healing attempt for exactly this — it runs `Runtime.getRuntime().exec("chmod
+u+x " + runPath)` before launching the algo on non-Windows — **but never calls
+`.waitFor()` on it before immediately trying to execute `run.sh` directly.** This
+is a genuine, Verified race condition: most local boots win the race, but it has
+been directly reproduced losing (crashing) at least once locally
+(`java.io.IOException: error=13, Permission denied`). The "Verified functional"
+claim below reflects a run that happened to win the race, not proof it can't be
+lost. See `docs/COMPLIANCE_REPORT.md` section 1.1 for the full mechanism and
+empirical crash-rate estimate.
+
+**Use `defense_v3_lowcompute_permfix.zip` (added below) instead of
+`defense_v3_lowcompute.zip` where possible** — it ships `run.sh` already
+executable, sidestepping the race entirely.
+
 ## What's in this folder
 
-- `defense_v3_lowcompute.zip` — ready to upload as-is, produced with the starter
-  kit's own official packaging tool:
+- `defense_v3_lowcompute.zip` — produced with the starter kit's own official
+  packaging tool exactly as documented:
   ```
   cd baselines && ../scripts/zipalgo_mac defense_v3_lowcompute ../submissions/milestone2_champion/defense_v3_lowcompute.zip
   ```
-- `defense_v3_lowcompute_algo_folder/` — the same algo, unzipped, in case the
-  submission portal wants a folder instead of a zip.
-- **Verified functional**: re-extracted the zip into a clean temp directory and
-  played a real match against `python-algo` with `engine.jar` — ran to completion
-  and won, with 0 crashes on either side.
+  **Carries the race-condition risk above** — kept for parity/transparency with
+  the official tool's output, not recommended as the primary upload artifact.
+- **`defense_v3_lowcompute_permfix.zip` (recommended)** — identical contents,
+  built with the system `zip` tool instead (preserves the executable bit).
+  Verified via fresh extraction with a plain `unzip` (no manual `chmod`) plus a
+  real match against `python-algo` — ran to completion and won, 0 crashes.
+- `defense_v3_lowcompute_algo_folder/` — the same algo, unzipped, with the
+  executable bit already set on `run.sh`, in case the submission portal wants a
+  folder instead of a zip.
 
 ## How to submit
 
@@ -53,8 +77,9 @@ Same caveat as `submissions/emergency_fallback/README.md`: we have no portal/log
 access, so the actual upload flow is untested (`docs/COMPLIANCE_REPORT.md`).
 
 1. Go to the Terminal submission portal (https://terminal.c1games.com).
-2. Upload `defense_v3_lowcompute.zip` directly, OR select the
-   `defense_v3_lowcompute_algo_folder/` directory if the portal wants a raw folder.
+2. **Prefer `defense_v3_lowcompute_algo_folder/` if the portal takes a raw
+   folder, otherwise upload `defense_v3_lowcompute_permfix.zip`** (not the plain
+   `defense_v3_lowcompute.zip` — see the race-condition finding above).
 
 ## Rollback / provenance
 
@@ -74,5 +99,9 @@ git archive milestone2-champion -- baselines/defense_v3_lowcompute | (cd /tmp/re
 
 ```bash
 cd "Citadel Terminel"
-cd baselines && ../scripts/zipalgo_mac defense_v3_lowcompute ../submissions/milestone2_champion/defense_v3_lowcompute.zip && cd ..
+cd baselines
+chmod +x defense_v3_lowcompute/run.sh
+zip -r ../submissions/milestone2_champion/defense_v3_lowcompute_permfix.zip defense_v3_lowcompute \
+  -x '*.git*' 'defense_v3_lowcompute/README.md' 'defense_v3_lowcompute/*.ps1'
+cd ..
 ```

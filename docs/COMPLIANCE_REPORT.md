@@ -34,14 +34,14 @@ as certain unless tagged Verified with a citation.
   install` before executing an uploaded algo). We did not find a
   `requirements.txt` anywhere in the repo.
 
-### 1.1 Milestone 3 addition: **Verified** local reproduction of a `run.sh` permission-loss bug in the official `scripts/zipalgo_mac` packaging tool
+### 1.1 `run.sh` executable-bit race condition in the official `scripts/zipalgo_mac` tool + `engine.jar` — audited across all 3 packages, all now fixed
 
-While doing this milestone's fresh-extraction submission verification, we found
-that zipping an algo with the starter kit's own official `scripts/zipalgo_mac`
-tool, exactly as documented, produces a zip in which `run.sh` **loses its
-executable permission bit** (mode `0o100644`, i.e. `rw-r--r--`, instead of
-`0o100755`). Re-extracting that exact zip into a clean directory with a plain
-`unzip` and running a real local match reproduces a genuine engine-level crash:
+**Original Milestone 3 finding:** zipping an algo with the starter kit's own
+official `scripts/zipalgo_mac` tool, exactly as documented, produces a zip in
+which `run.sh` **loses its executable permission bit** (mode `0o100644`, i.e.
+`rw-r--r--`, instead of `0o100755`). Re-extracting that zip into a clean
+directory with a plain `unzip` and running a real local match reproduced a
+genuine engine-level crash:
 
 ```
 Algo Crashed. Crash: true !processIsAlive: null
@@ -49,28 +49,66 @@ java.io.IOException: error=13, Permission denied
 AlgoIndex 0 crashed bootup: .../run.sh
 ```
 
-This is **not specific to one algo** — we confirmed the same permission loss in
-the already-packaged `submissions/milestone2_champion/*.zip` from last milestone
-too, so this is a property of the packaging tool itself, not something introduced
-by a particular algo's files.
+**Milestone 4 root-cause refinement (Verified via decompiling `engine.jar`):**
+this is not a deterministic failure — it's a genuine **race condition inside the
+engine itself**. Decompiling `com/c1games/terminal/game/player/SimpleAlgoPlayer.class`
+(`javap -c -p`, extracted from `engine.jar`) shows the engine already has a
+self-healing attempt for exactly this on non-Windows: it calls
+`Runtime.getRuntime().exec("chmod u+x " + runPath)` (literal string constant
+found in the class's constant pool: `"chmod u+x \u0001"`) immediately before
+constructing the `ProcessBuilder` that directly executes `run.sh`. **Critically,
+the bytecode never calls `.waitFor()` (or any other synchronization) on that
+`chmod` process before proceeding** — it's fired off asynchronously and the code
+immediately moves on to spawn `run.sh` regardless of whether the `chmod` has
+actually completed yet.
+
+**Empirical characterization (Verified, small local sample):** across this
+investigation's repeated boot attempts of intentionally non-executable
+(`0o100644`) `run.sh` zips, we observed **1 crash out of ~16 total local boot
+attempts (~6%)** — i.e. the async `chmod` usually wins the race on a fast local
+disk with no contention, but it is not guaranteed to, and we have a direct,
+reproducible crash log proving it can lose. **We could not test under anything
+resembling real tournament server conditions** (the class `com/c1games/terminal/util/DockerAlgo`
+also present in `engine.jar` suggests the production environment may run algos
+inside Docker containers, which would add meaningfully more filesystem/process
+overhead per boot than our bare-metal local `engine.jar` runs — plausibly making
+this race more likely to be lost, not less, though this is **Hypothesis**, not
+verified, since we have no access to that environment).
+
+**Audit result: all 3 existing submission packages had this exact same latent
+bug**, since all 3 were built with the same official `zipalgo_mac` tool:
+
+| Package | Original zip `run.sh` mode | Bug present? | Fixed? |
+|---|---|---|---|
+| `submissions/emergency_fallback/defense_baseline.zip` (Milestone 1) | `0o100644` | Yes | **Yes — `defense_baseline_permfix.zip` added, Verified via fresh extraction** |
+| `submissions/milestone2_champion/defense_v3_lowcompute.zip` (Milestone 2) | `0o100644` | Yes | **Yes — `defense_v3_lowcompute_permfix.zip` added, Verified via fresh extraction** |
+| `submissions/milestone3_champion/defense_v4_tiebreak.zip` (Milestone 3) | `0o100644` | Yes | **Yes — `defense_v4_tiebreak_permfix.zip` added, Verified via fresh extraction** |
+
+Each `*_permfix.zip` was built with the system `zip` tool instead (which
+preserves unix permission bits by default — confirmed `0o100755` on `run.sh` in
+every case), and each was independently re-verified with the same
+fresh-extraction protocol: `unzip` into a brand-new temp directory with **no
+manual `chmod`**, then a real local match against `python-algo` via `engine.jar`
+— all 3 booted and completed with 0 crashes. Every `*_algo_folder/` unzipped
+folder in all 3 submission directories also now has `run.sh`'s executable bit set
+directly (sidesteps the question entirely, since a folder upload never goes
+through zip compression/extraction at all).
 
 **What we could NOT verify (no portal access, per section 4 below):** whether the
-actual tournament submission portal's upload/extraction flow restores or ignores
-this permission bit server-side (plausible — many upload pipelines normalize
-permissions or invoke the entry point a different way — in which case this is a
-non-issue for real submissions), or whether it fails exactly like our local
-`unzip` did. **Hypothesis, not Verified, either way; treat as an open risk.**
+actual tournament submission portal's upload/extraction flow restores this
+permission bit server-side via its own logic independent of the race described
+above (plausible, in which case the underlying risk may be moot for real
+submissions), or preserves whatever a `zip`/`unzip` round-trip produces. **Given
+we can reproduce a real crash locally either way (from the race, independent of
+the portal), and the fix has zero downside, we are treating the `*_permfix.zip` /
+`*_algo_folder/` artifacts as the recommended upload artifacts for all 3
+milestones' packages going forward, superseding the plain `zipalgo_mac` output.**
 
-**Mitigation shipped starting this milestone:** every submission package from
-`submissions/milestone3_champion/` onward includes an alternative zip built with
-the system `zip` tool (which does preserve unix permission bits by default),
-verified via the identical fresh-extraction test to boot with no manual `chmod`
-needed, plus a raw unzipped folder option (permission bit already set) as the
-safest fallback if the portal accepts a folder directly. See
-`submissions/milestone3_champion/README.md` for the exact repro and verification
-steps. Earlier packages (`emergency_fallback`, `milestone2_champion`) were left
-as-is (not the currently recommended submission) but this finding applies to them
-too if they were ever used instead.
+**Net assessment: this was a real, previously-undiscovered risk that could have
+caused a match forfeit on submission regardless of which milestone's champion
+was ultimately submitted, since it affected the packaging tool itself, not any
+one algo's code. All 3 known packages are now confirmed fixed and independently
+re-verified.**
 
 ## 2. Runtime / resource limits
 
