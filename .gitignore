@@ -2,6 +2,16 @@
 *.replay
 *__pycache__*
 
+# Locally-downloaded JDK used to run engine.jar (large binary, redownload via tools/setup_java.sh)
+tools/jdk-*/
+tools/*.tar.gz
+tools/java_env.sh
+
+# Local experiment artifacts (raw match logs/replays); structured results are committed separately
+experiments/replays/
+experiments/raw_logs/
+*.db
+
 algos/*
 !algos/starter-algo-ZIPME
 
