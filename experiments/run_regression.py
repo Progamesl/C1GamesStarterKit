@@ -44,6 +44,25 @@ DEFAULT_OPPONENTS = [
     "opponents/signature_detector",
     "opponents/minimax_lookahead",
     "opponents/predictor_opponent",
+    # Milestone 6 additions: everything above this line is SELF-BUILT (either by
+    # us or, for python-algo, the official starter template) -- a 100% win rate
+    # against it is evidence of robustness against threats we imagined, not
+    # against genuinely independent design. The opponents below are real,
+    # substantial, publicly-sourced Terminal python-algo code from other teams'
+    # GitHub repos, vetted as complete/runnable (not empty starter forks) and
+    # used strictly as unmodified black-box test opponents (never copied into
+    # our own code) -- see docs/COMPLIANCE_REPORT.md for sourcing/license notes
+    # and docs/MILESTONE_6_REPORT.md for the full vetting + benchmark record.
+    # IMPORTANT: `travelling_salesmen_v33` is a REAL, CURRENTLY-UNRESOLVED LOSS
+    # for milestone5-champion (0/20, both seats) -- this is intentionally kept
+    # in the permanent suite so this is never silently hidden by only counting
+    # wins. See docs/MILESTONE_6_REPORT.md for full root-cause + patch-attempt
+    # writeup (multiple honest fix attempts made, none fully closed the gap).
+    "public_opponents/skill_issue_final3gem",
+    "public_opponents/travelling_salesmen_adapdef",
+    "public_opponents/travelling_salesmen_frumblesnatch",
+    "public_opponents/travelling_salesmen_v33",
+    "public_opponents/davidw0311_mcts",
 ]
 
 

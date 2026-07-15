@@ -240,10 +240,10 @@ found.** This is stated plainly rather than papered over — if the user or a
 future session finds the actual "Learn" page content (e.g. by being logged
 in, which this agent cannot do), it should be added here.
 
-## 5. What this document does not do
+## 5. What this document does not do (as of when §§1-4 were written)
 
-This is a documentation/evidence-logging task, not a new benchmark-and-decide
-cycle. Per the user's explicit instruction:
+This was, at the time, a documentation/evidence-logging task, not a new
+benchmark-and-decide cycle. Per the user's explicit instruction at that point:
 - **No champion change.** `baselines/defense_v6_encryptor_fix`
   (`milestone5-champion`) remains the current champion.
 - **No new tag.** These results, while directionally positive, are far too
@@ -257,3 +257,59 @@ cycle. Per the user's explicit instruction:
   reflected there, and the black-box-GitHub-opponent research (paused, not
   abandoned, per the user's instruction) as the other in-progress avenue
   toward closing it further.
+
+**This is superseded by §6 below**, which resumed and completed exactly that
+paused black-box-GitHub-opponent research in Milestone 6.
+
+## 6. Black-box, publicly-sourced GitHub opponents (Milestone 6 — this IS a real, reproducible benchmark)
+
+Unlike §§1-4 above, everything in this section **is** independently
+reproducible by this agent: real code, cloned from public GitHub repos, run
+unmodified as black-box opponents through this project's own local
+`engine.jar`/harness, with real replay files this agent inspected directly.
+This is qualitatively stronger evidence than §§1-4, closing (not just adding
+one more thin data point to) a meaningful chunk of the "self-built opponent
+corpus" overfitting concern raised at the top of this document. Full sourcing,
+vetting, and root-cause detail is in `docs/STRATEGIC_PRIOR_ART_REPORT.md`
+source-log entries #21-24 and `docs/MILESTONE_6_REPORT.md`; this section is
+the results summary.
+
+| Opponent | Source | Real placement claim | Result vs. `milestone5-champion` (n, both seats) |
+|---|---|---|---|
+| `skill_issue_final3gem` | [`satvikmittal638/Terminal-2026-Skill-Issue`](https://github.com/satvikmittal638/Terminal-2026-Skill-Issue) | 3rd/4 shown, "Citadel Terminal Competition," Mar 2026 | **WON 20/0** |
+| `travelling_salesmen_adapdef` | [`The-Travelling-Salesmen/terminal-c1`](https://github.com/The-Travelling-Salesmen/terminal-c1) | Claimed "#1 spot at Harvard" (repo description) — but see correction below, this specific folder is mostly unmodified starter-kit boilerplate | **WON 20/0** |
+| `travelling_salesmen_frumblesnatch` | same repo, `frumblesnatch-v1` folder | Same repo/claim, different iteration | **WON 19/20** (1 loss at n=20 — see note below) |
+| `travelling_salesmen_v33` (self-declared **"Snorkeldink-V69"** internally, `snorkeldink-v3-3` folder) | same repo — this is the actual most-evolved, most-dangerous iteration, corrected from an earlier (wrong) assumption that `AdapDef` was their strongest — see below | Same repo/claim; this is the version whose mechanism (see below) plausibly *is* what "helped clinch #1 at Harvard" | **LOST 0/20, both seats** — see `docs/MILESTONE_6_REPORT.md` for full root-cause + patch-attempt writeup |
+| `travelling_salesmen_v32`/`v31` (`snorkeldink-v3-2`/`v3-1` folders, smoke-tested only) | same repo | Same repo/claim, intermediate iterations | `v3-2`: **LOST 0/6** (same mechanism as v3-3); `v3-1`: **WON 6/0** (mechanism not yet present in this iteration) |
+| `davidw0311_mcts` | [`davidw0311/c1_terminal`](https://github.com/davidw0311/c1_terminal) | No placement claim (personal/student project) | **WON 20/0** |
+
+**A real, reproducible, decisive loss was found** against
+`travelling_salesmen_v33`: our champion loses every single game, both seats,
+to a real, publicly-sourced, plausibly-competition-relevant opponent. This is
+exactly the kind of finding the overfitting concern was worried we'd never
+surface by only testing against self-built opponents — see
+`docs/MILESTONE_6_REPORT.md` §3-5 for the full root-cause analysis (a
+continuous, un-paused, 100%-MP Demolisher rush at a single lane grinds down
+our single-layer corner defense faster than it can be rebuilt) and honest
+report of five separate patch attempts, none of which fully closed the gap.
+**`milestone5-champion` remains the recommended champion** — not because this
+loss doesn't matter, but because every attempted patch either failed to fix
+it or wasn't proven not to introduce other regressions strongly enough to
+justify replacing a champion that is otherwise undefeated across 24 other
+opponents (20 self-built + 4 other independent ones) with an unproven
+alternative. See the milestone report for the full reasoning.
+
+**Correction made during this work, logged transparently**: an earlier pass
+(before this section was written) had assumed `travelling_salesmen_adapdef`
+was this repo's strongest/final iteration (based on its more
+"official-sounding" folder name) and benchmarked only that one, recording a
+clean win. Deeper inspection (comparing `AdapDef`'s file contents line-by-line
+against the other iterations) found `AdapDef` actually retains large amounts
+of unmodified starter-kit boilerplate (default debug strings, unused starter
+helper methods) and never resolved a resource-discipline bug present in
+earlier versions (unconditionally spending on defense every turn regardless
+of whether its own initial build is complete) that `v3-3`/`v3-2` explicitly
+fixed (a `save_cores` gate). This is presented as a correction, not buried —
+the initial "we found the strongest one and won" conclusion was wrong, and
+finding that out required actually reading and running more than one file per
+repo rather than trusting a folder name.

@@ -376,3 +376,99 @@ this branch.
 (patched) is now tagged `milestone5-champion`.** `milestone1-fallback`,
 `milestone2-champion`, `milestone3-champion`, and `milestone4-champion` all
 remain **completely unchanged** as safe rollback points.
+
+## 13. Milestone 6: genuinely independent, publicly-sourced opponents — a REAL, currently-unpatched loss found
+
+Everything in sections 1-12 above, however methodologically varied, is
+**self-built**: every opponent was designed, written, and tuned by this same
+project. Full detail (sourcing, vetting, root-cause, patch attempts) is in
+`docs/MILESTONE_6_REPORT.md`; this section is the counterexample-suite-style
+summary, kept consistent with the format of sections 1-12.
+
+**5 real, substantial, non-stub Terminal python-algo bots were found on
+public GitHub repos, vetted, and run unmodified as local black-box test
+opponents** (never copied/adapted into our own code — see
+`docs/COMPLIANCE_REPORT.md` §7 for sourcing/license notes):
+
+| Opponent | Source | Result vs. `milestone5-champion` |
+|---|---|---|
+| `public_opponents/skill_issue_final3gem` | Real team, 3rd-place claim, "Citadel Terminal Competition" Mar 2026 | WON 20/0 |
+| `public_opponents/travelling_salesmen_adapdef` | Real team, "#1 spot at Harvard" repo claim (this specific iteration is mostly unmodified starter-kit boilerplate — see correction below) | WON 20/0 |
+| `public_opponents/travelling_salesmen_frumblesnatch` | Same repo, different iteration | WON 19/20 |
+| **`public_opponents/travelling_salesmen_v33`** (self-declared "Snorkeldink-V69") | Same repo — this is the actual most-evolved iteration, and the one whose mechanism (continuous, un-paused, single-lane Demolisher rush) plausibly *is* what won at Harvard | **LOST 0/20, both seats, no crashes** |
+| `public_opponents/davidw0311_mcts` | Real 971-line MCTS bot, no placement claim | WON 20/0 |
+
+**Correction made and logged transparently, not buried**: an initial pass
+assumed `AdapDef` (the more official-sounding folder name) was this team's
+strongest/final algo and benchmarked only that one, recording a clean win.
+Deeper inspection (reading — not just naming — every iteration) found
+`AdapDef` actually retains large amounts of unmodified starter-kit
+boilerplate and never fixed a resource-discipline bug present in earlier
+iterations. `snorkeldink-v3-3` (renamed `travelling_salesmen_v33` in this
+repo), whose own docstring self-declares `"the final version of
+Snorkeldink-V69,"` is the actual strongest iteration — and it is the one
+that beats us.
+
+### 13.1 Root cause (Verified, turn-by-turn replay evidence)
+
+`travelling_salesmen_v33`'s mechanism: adaptively pick whichever of our two
+halves looks weaker (Wall+Turret count), then commit **100% of MP to
+Demolishers at that one lane, every single turn from turn 4 onward, forever
+— no bursting, no pausing.** Our `core_turret_anchors` places single TURRETs
+directly on the two extreme board corners, which are themselves valid
+scoring edge tiles (`gamelib.GameMap.get_edge_locations`). A freshly
+rebuilt, full-HP TURRET there is killed again in the *same turn* it's
+rebuilt by 3+ simultaneous Demolishers converging (Verified: matching
+spawn/death unit IDs within one turn's event log), and the diamond board's
+geometry means there is no tile physically "behind" the extreme corner to
+retreat to (Verified via `gamelib.GameMap.in_arena_bounds`). Once that
+corner is reliably undefended, every subsequent wave breaches directly for
+player-health damage — accelerating as the opponent's MP economy ramps up
+over the game (`bitRampBitCapGrowthRate`), while our SP-funded rebuild
+budget does not compound at a comparable rate.
+
+### 13.2 Patch attempts: 5 tried, all honestly reported, none fully closed the gap
+
+Unlike every prior section in this document, **this is a case where a real
+weakness was found and root-caused, but could not be fixed within this
+milestone's effort** — reported here exactly that plainly, per this
+project's standing discipline of never forcing an unproven fix just to avoid
+reporting an open gap:
+
+1. 2nd TURRET layer at `[2,11]`/`[25,11]` — delayed to turn ~43, still 0/20.
+   Rejected on inspection: those tiles are themselves also scoring edges.
+2. 2nd TURRET layer at `[3,11]`/`[24,11]` (confirmed true depth, off the
+   scoring edge) — delayed to turn ~38, still 0/20.
+3. Attempt 2 + reactive-defense SP cap raised 6→24 — **identical** result to
+   attempt 2 (SP cap was not the actual bottleneck).
+4. Attempt 2 (cap=14) + new MP-funded counter-offense triggered by evidence
+   of sustained incoming damage — `points_scored` improved 1.0→5.0, still a
+   decisive 0/12 loss.
+5. Corner TURRETs replaced with cheaper WALLs (absorb hits more cheaply) +
+   depth TURRETs for kill power + attempt 4's counter-offense — no further
+   improvement, still 0/12.
+
+Kept in the repo as `baselines/defense_v9_corner_depth`, clearly documented
+as a tested-and-rejected candidate (same convention as
+`defense_v7_range_leverage`/`defense_v8_offense_burst`) — **not adopted, not
+deleted.**
+
+### 13.3 Full regression (no regressions found anywhere else)
+
+`experiments/run_regression.py`'s `DEFAULT_OPPONENTS` permanently extended
+with all 5 independent opponents. Full run for
+`baselines/defense_v6_encryptor_fix`: **all 20 self-built opponents still
+100% (no change from Milestone 5), 4/5 independent opponents 100%, 1/5
+(`travelling_salesmen_v33`) 0% — the one known, open loss, kept permanently
+in the suite rather than silently excluded.** Full log:
+`/tmp/m6_full_regression.log`.
+
+### 13.4 Outcome (Milestone 6)
+
+**Champion unchanged: `baselines/defense_v6_encryptor_fix`, tagged
+`milestone5-champion`, remains the champion.** No new tag cut. This is the
+single most important open finding in this project — a real, publicly
+sourced, plausibly-competition-relevant opponent beats our champion cleanly
+and repeatably, and we do not yet have a working fix. Flagged prominently in
+`docs/MILESTONE_6_REPORT.md` §6 as the top risk for the tournament strategy
+brief, not buried as a footnote.

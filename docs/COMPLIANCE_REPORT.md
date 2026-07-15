@@ -207,16 +207,56 @@ Summarized:
   prior-art descriptions — see `docs/MILESTONE_5_REPORT.md` §0), which is a real
   overfitting risk. As of this entry, the user has manually run our packaged
   champion against several of that platform's named practice bots and reported
-  results back — see the new `docs/REAL_OPPONENT_RESULTS.md` for the full log. This
-  is genuinely non-self-built evidence (a first for this project), but it is
-  single-sourced, user-reported, not independently reproducible by this agent, and
-  very thin (3 opponents, 4 games) — it narrows this gap, it does not close it. The
-  practice sandbox's actual bot roster and what those bots represent (platform
-  practice bots vs. anything resembling past competitors) also remains
-  under-documented from any official source found so far — see
-  `docs/REAL_OPPONENT_RESULTS.md` §1 and §4 for the specific search performed and
-  what was and wasn't found. Actual live-ladder/tournament matches against other
-  real teams' algos remain completely inaccessible to this agent, as noted above.
+  results back — see `docs/REAL_OPPONENT_RESULTS.md` §§1-5 for the full log. This
+  is genuinely non-self-built evidence, but it is single-sourced, user-reported, not
+  independently reproducible by this agent, and very thin (3 opponents, 4 games) —
+  it narrows this gap, it does not close it. The practice sandbox's actual bot
+  roster and what those bots represent (platform practice bots vs. anything
+  resembling past competitors) also remains under-documented from any official
+  source found so far — see `docs/REAL_OPPONENT_RESULTS.md` §1 and §4 for the
+  specific search performed and what was and wasn't found.
+  **Milestone 6 update — this gap is now substantially narrower, though not fully
+  closed:** this agent found, vetted, and locally ran (via the same local
+  `engine.jar` used for every other benchmark in this project — fully
+  reproducible, unlike the practice-sandbox results above) 5 real, substantial,
+  publicly-sourced Terminal python-algo bots from other teams' GitHub repos, used
+  strictly as unmodified black-box opponents. One of them
+  (`travelling_salesmen_v33`, from a repo claiming a real competition win) beats
+  our champion decisively (0/20, both seats) — the first genuinely independent
+  opponent to do so in this project's history. See §7 below and
+  `docs/MILESTONE_6_REPORT.md` for the full record. Actual live-ladder/tournament
+  matches against other real teams' algos, and any former Global Championship
+  winner's actual source code, remain completely inaccessible to this agent — a
+  targeted check for the 4 most relevant named winners (Smite, QY, Garpuz, Bin
+  Birds) confirmed none have published their code (`docs/MILESTONE_6_REPORT.md`
+  §1.1), consistent with the organizer norm already documented in
+  `docs/STRATEGIC_PRIOR_ART_REPORT.md` source #7.
+
+## 7. Milestone 6: sourcing and license notes for black-box public-opponent testing
+
+Per the user's explicit instruction, every repo below is used **strictly as an
+unmodified local black-box test opponent** — dropped into
+`public_opponents/<name>/` exactly as cloned (only file-permission fixes, no
+logic changes), run through this project's own harness/`engine.jar`, never
+read for the purpose of copying or adapting any of its logic into
+`baselines/`. Full benchmark results are in `docs/MILESTONE_6_REPORT.md`.
+
+| Repo | Author(s) | License found | Our usage |
+|---|---|---|---|
+| [`satvikmittal638/Terminal-2026-Skill-Issue`](https://github.com/satvikmittal638/Terminal-2026-Skill-Issue) | Satvik Mittal, Om Gore, Chatanya Maheshwari | Standard Correlation One starter-kit `License.md` (covers starter-kit-derived files; no separate license for the team's own strategy code) | Black-box test opponent only (`public_opponents/skill_issue_final3gem/`) |
+| [`The-Travelling-Salesmen/terminal-c1`](https://github.com/The-Travelling-Salesmen/terminal-c1) | Team "Travelling Salesmen" (contributors per GitHub: FH, r-k-jonynas) | Same starter-kit `License.md` situation as above | Black-box test opponent only, 5 iterations tested (`public_opponents/travelling_salesmen_*`) |
+| [`davidw0311/c1_terminal`](https://github.com/davidw0311/c1_terminal) | davidw0311 | No LICENSE file (defaults to all-rights-reserved) | Black-box test opponent only (`public_opponents/davidw0311_mcts/`) |
+| [`vinharish77/TerminalCompetition`](https://github.com/vinharish77/TerminalCompetition) | vinharish77 | Not checked — repo confirmed to be an untouched starter-kit fork, **not used** (correctly excluded as a dud) |  |
+
+**Conservative reading applied throughout, stated explicitly**: even though
+the starter-kit `License.md` found in every repo above is fairly permissive
+for the starter-kit-derived files it actually covers, none of these teams
+published a separate license for their *own* strategic code additions
+(`algo_strategy.py`'s custom logic, `defence.py`, `adaptive_opening.py`,
+etc.). Absent an explicit grant, that layer defaults to standard copyright —
+which is exactly why every use of this code in this project has been limited
+to running it unmodified as a local test opponent, never reading it for
+inspiration to copy or adapt into our own submission.
 
 ## 5. Known repo quirks fixed locally (do not affect legality, just hygiene)
 
