@@ -63,6 +63,13 @@ DEFAULT_OPPONENTS = [
     "public_opponents/travelling_salesmen_frumblesnatch",
     "public_opponents/travelling_salesmen_v33",
     "public_opponents/davidw0311_mcts",
+    # Milestone 6, round 2 additions: two more real, human-competition-placed
+    # bots (found earlier but not yet benchmarked, then actually run this
+    # round per the user's "find the STRONGEST public bot" follow-up) -- see
+    # docs/STRATEGIC_PRIOR_ART_REPORT.md source-log #15/#16 and
+    # docs/REAL_OPPONENT_RESULTS.md sec 7 for sourcing/config-diff/benchmark detail.
+    "public_opponents/funnel_uoft",
+    "public_opponents/summer2022_6th",
 ]
 
 

@@ -313,3 +313,92 @@ fixed (a `save_cores` gate). This is presented as a correction, not buried —
 the initial "we found the strongest one and won" conclusion was wrong, and
 finding that out required actually reading and running more than one file per
 repo rather than trusting a folder name.
+
+## 7. Second search round: hunting specifically for the STRONGEST/former-champion code (Milestone 6, round 2)
+
+Per the user's explicit upgraded goal — find and test against the strongest
+publicly available bot, ideally an actual former tournament winner/world
+champion — this round re-checked the named champions already identified in
+`docs/STRATEGIC_PRIOR_ART_REPORT.md` (Smite/Stanford, QY/Cambridge, Garpuz/UW)
+plus one newly-found named champion, and separately followed up on two
+real-placement repos that had been *found* in an earlier pass but not yet
+actually benchmarked. Full sourcing/vetting/config-diff detail is in
+`docs/STRATEGIC_PRIOR_ART_REPORT.md` source-log entries #15, #16, #25, #26 —
+this section is the results summary.
+
+### 7.1 Former champions: still no public code found (now 5 named individuals/teams checked, zero hits)
+
+**Smite (Stanford, 2021 Global Champions), QY (Cambridge, 2022 Global
+Champions), and Garpuz (UW, 2020 regional winner) were re-checked directly
+this round and confirmed to still have no public repo** — consistent with
+the Milestone 6 round-1 finding for these same three (plus Bin Birds). One
+**new** named champion was found and checked: **"Lee Isaac," 2022 Citadel
+Terminal Summer Invitational Champion (Rank 1 of 42, $6,500 prize)**, per
+their own LinkedIn credential list (which separately claims a peak Season 8
+rank of 1st out of 800+ players — the single highest-profile individual credential
+found in this entire search, across both rounds). Their LinkedIn links a
+GitHub account (`Lee-Isaac`) — but that accounts belongs to a **different,
+unrelated person** with the same name (a DevOps engineer in Seoul, 60
+unrelated repos, zero Terminal/C1Games code). No other GitHub account could
+be tied to this specific champion. **This is now the fifth separately-checked
+named champion/high-placer with zero published code** (Smite, QY, Garpuz, Bin
+Birds, Lee Isaac) — the "organizer asked us not to publish complete algos"
+norm documented directly in `luckystarufo`'s repo (source #7) is very firmly
+established at this point, not a one-off. **Conclusion: the ceiling on
+finding an actual former-champion's code via public search has been reached.**
+
+### 7.2 Two more real-placement repos, found earlier, actually benchmarked this round
+
+| Opponent | Source | Real placement claim | Result vs. `milestone5-champion` (n=10, both seats) |
+|---|---|---|---|
+| `funnel_uoft` | [`langsonzhang/Terminal-C1-Midwest-2022`](https://github.com/langsonzhang/Terminal-C1-Midwest-2022) ("Murphy's Lawyers," UofT) | **#5 of 24 teams**, C1 Midwest Spring 2022, against CMU/UMich/UIUC competitors | **WON 10/10**, both seats, no crashes — the fastest, most lopsided sweep of any independent opponent tested (mean 10 turns, 31-0 points_scored) |
+| `summer2022_6th` | [`yip6ga1lok6/C1-Terminal-Summer-2022`](https://github.com/yip6ga1lok6/C1-Terminal-Summer-2022) | **6th of 91 teams**, Summer Invitational 2022 | **WON 10/10**, both seats, no crashes (mean 56 turns — a real, drawn-out engagement, unlike `funnel_uoft`, but still a clean sweep) |
+
+Both are real, substantial (723/752-line), non-stub `algo_strategy.py` files
+with real supporting logic, run strictly as unmodified black-box opponents
+(dropped into `public_opponents/funnel_uoft/` and
+`public_opponents/summer2022_6th/` exactly as cloned, only `run.sh`
+permission fixes). **Config-mismatch caveat, stated honestly and cutting both
+ways per the user's instruction**: both ship an old
+`seasonCompatibilityMode: 5`-era config quite different from ours (see
+`docs/STRATEGIC_PRIOR_ART_REPORT.md` #15/#16 for the exact stat diffs — e.g.
+`funnel_uoft`'s Support started completely unshielded at 1 HP, `summer2022_6th`'s
+base Turret hit for over 3x our current base damage but cost 3x more) — their
+real historical placement could plausibly translate into either a stronger or
+weaker showing under our corrected config than what actually happened here.
+Both wins are still genuine, decisive, and reproducible under the config we
+are actually being scored on, exactly as recorded above — this caveat affects
+how much the result should update our confidence about the *broader* pattern
+of "will decent human-designed bots beat us," not whether these two specific
+recorded wins are real.
+
+### 7.3 One repo found, deliberately not benchmarked, with an honest reason
+
+`wllmzhu/alpha-terminal` (an RL/policy-gradient agent, previously flagged in
+`docs/STRATEGIC_PRIOR_ART_REPORT.md` #8 for a stat mismatch) was re-examined
+this round specifically for runnability. Its own code is real and substantial
+(283-line `algo_strategy.py` + a small `torch`-based `arch/` package for the
+policy network) — but **the repo ships no trained checkpoint file at all**,
+only the untrained architecture and a training loop. Directly inspecting its
+own `CheckpointManager` confirms it falls back to a **freshly, randomly
+initialized policy network** whenever no checkpoint is found on disk (which
+is always true for a fresh clone). Benchmarking this would only test a random
+policy, not the actual "strong amateur" agent the repo's own linked report
+describes — reported here as a **deliberate, reasoned exclusion**, not a dud
+(unlike `vinharish77/TerminalCompetition`, re-confirmed again this round as
+an untouched starter-kit fork with no custom logic at all).
+
+### 7.4 Headline conclusion for this round
+
+**No former world/global champion's actual code was found or run — this
+remains a hard ceiling, now confirmed across 5 independently-checked named
+individuals/teams.** Two more real, human-competition-placed bots *were*
+found and benchmarked, and **both lost decisively (10/0 each, both seats)** —
+consistent with every other genuinely independent opponent found in this
+project except the one real, still-unpatched exception
+(`travelling_salesmen_v33`, §6 above). This strengthens rather than weakens
+the case that `travelling_salesmen_v33` is a specific, real, structural
+weakness worth treating as the top flagged risk (not that our champion is
+simply "weak against real opponents in general" — the evidence base now
+spans 7 genuinely independent opponents, 6 clean wins and 1 clean, well
+-understood, honestly-still-open loss).

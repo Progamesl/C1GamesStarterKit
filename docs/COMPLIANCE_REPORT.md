@@ -231,6 +231,20 @@ Summarized:
   Birds) confirmed none have published their code (`docs/MILESTONE_6_REPORT.md`
   §1.1), consistent with the organizer norm already documented in
   `docs/STRATEGIC_PRIOR_ART_REPORT.md` source #7.
+  **Round 2 follow-up (same milestone, per an explicit "find the strongest
+  possible opponent" upgrade to this task):** a 5th named champion (Lee Isaac,
+  2022 Citadel Terminal Summer Invitational, Rank 1/42) was found and checked
+  directly — same result, no published code, confirming this is now a firmly
+  established pattern rather than a small sample. Two more real,
+  human-competition-placed bots that had been *found* in an earlier pass but
+  not yet benchmarked were actually run this round (`public_opponents/funnel_uoft`,
+  #5/24 teams; `public_opponents/summer2022_6th`, 6th/91 teams) — both lost
+  decisively (10/0 each, both seats), consistent with every other independent
+  opponent except the one still-open `travelling_salesmen_v33` loss. One more
+  candidate (`wllmzhu/alpha-terminal`, an RL agent) was found to be
+  unbenchmarkable for a legitimate reason (no trained checkpoint file
+  published, only the untrained architecture) rather than excluded as a dud.
+  See `docs/REAL_OPPONENT_RESULTS.md` §7 for the full round-2 record.
 
 ## 7. Milestone 6: sourcing and license notes for black-box public-opponent testing
 
@@ -247,6 +261,8 @@ read for the purpose of copying or adapting any of its logic into
 | [`The-Travelling-Salesmen/terminal-c1`](https://github.com/The-Travelling-Salesmen/terminal-c1) | Team "Travelling Salesmen" (contributors per GitHub: FH, r-k-jonynas) | Same starter-kit `License.md` situation as above | Black-box test opponent only, 5 iterations tested (`public_opponents/travelling_salesmen_*`) |
 | [`davidw0311/c1_terminal`](https://github.com/davidw0311/c1_terminal) | davidw0311 | No LICENSE file (defaults to all-rights-reserved) | Black-box test opponent only (`public_opponents/davidw0311_mcts/`) |
 | [`vinharish77/TerminalCompetition`](https://github.com/vinharish77/TerminalCompetition) | vinharish77 | Not checked — repo confirmed to be an untouched starter-kit fork, **not used** (correctly excluded as a dud) |  |
+| [`langsonzhang/Terminal-C1-Midwest-2022`](https://github.com/langsonzhang/Terminal-C1-Midwest-2022) | "Murphy's Lawyers" (Langson Zhang, Stan Hua, George/`CardboardTank`), UofT | Same starter-kit `License.md` situation as above | Black-box test opponent only (`public_opponents/funnel_uoft/`) — real placement claim (#5/24 teams) |
+| [`yip6ga1lok6/C1-Terminal-Summer-2022`](https://github.com/yip6ga1lok6/C1-Terminal-Summer-2022) | yip6ga1lok6 (team not further identified in-repo) | Same starter-kit `License.md` situation as above | Black-box test opponent only (`public_opponents/summer2022_6th/`) — real placement claim (6th/91 teams); repo's `python-algo` variant specifically is the one run (repo also ships `rust-algo`/`java-algo` of unclear relative finality) |
 
 **Conservative reading applied throughout, stated explicitly**: even though
 the starter-kit `License.md` found in every repo above is fairly permissive
