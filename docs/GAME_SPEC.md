@@ -1,5 +1,22 @@
 # Terminal Game Spec — Reconstructed From Source
 
+> **CRITICAL CORRECTION (Milestone 4, post-milestone3-champion):** every number in
+> this document, and every benchmark result from Milestones 1-3, was originally
+> derived from `game-configs.json` as shipped by the generic
+> `correlation-one/C1GamesStarterKit` clone — i.e. the **"Terminal Online Season 8"**
+> generic/sandbox default. The user subsequently found the *actual competition's own*
+> config picker, which defaults to **"High School Terminal 2026"** — a **different**
+> config, confirmed by the user to be downloaded directly from the competition's own
+> picker (higher-confidence source than the generic public starter kit default). The
+> two are not identical: several unit stats differ, and one unit (`SUPPORT`/Encryptor)
+> changes *mechanism*, not just numbers (was a resource-generating economy unit under
+> the old config, is a real shield/support unit with zero economy function under the
+> correct one). See §2.5 below for the full diff and §8 for what this invalidates.
+> **All values in §1-§7 below are the OLD, WRONG config except where §2.5 explicitly
+> overrides them — read §2.5 first.** The active `game-configs.json` at the repo root
+> has been replaced with the corrected "High School Terminal 2026" config (backup of
+> the old one preserved at `game-configs.season8-generic.json.bak` for audit trail).
+
 This document reconstructs the current (Season/compat-mode 5) ruleset **only from files
 actually present in the cloned `correlation-one/C1GamesStarterKit` repo** (commit
 `72b7589`, "feat/entrypoint (#150)") plus **decompiled bytecode of the bundled
@@ -21,7 +38,7 @@ costs/stats and mechanics are known to change between seasons.
 
 | Source | What it gives us |
 |---|---|
-| `game-configs.json` (repo root) | Canonical numeric config: unit stats/costs, resource growth, timing limits. Loaded by the engine at startup (`Config.useConfigFile`). |
+| `game-configs.json` (repo root) | Canonical numeric config: unit stats/costs, resource growth, timing limits. Loaded by the engine at startup (`Config.useConfigFile`). **As of Milestone 4, this file has been replaced with the corrected "High School Terminal 2026" config — see §2.5.** |
 | `python-algo/gamelib/*.py` | Official reference client. Encodes board geometry, targeting heuristics, resource plumbing exactly as C1 wrote it, in a form simple enough to fully read. |
 | `engine.jar` (28.6MB, unobfuscated compiled Java) | The actual authoritative engine. We decompiled bytecode with `javap` (JDK 17, Temurin) for `com.c1games.terminal.game.GameMain`, `.Game`, `.Config$ConfigVariables`, `.PlayerStats`, `.player.PlayerManager`. Package layout confirms this is a from-scratch C1 engine, not a wrapper around something else. |
 | One real local match (`java -jar engine.jar work python-algo/run.sh python-algo/run.sh`) | Confirms the engine actually runs, produces a `.replay`, and prints a `Winner (p1 perspective, 1 = p1 2 = p2): N` line. |
@@ -104,6 +121,109 @@ under SUPPORT at all — meaning **we could not fully verify SUPPORT's actual sh
 formula from config alone**; only that it exists as a mechanic in the client code.
 Flagged in `COMPLIANCE_REPORT.md` as an open gap.
 
+## 2.5 CORRECTED config: "High School Terminal 2026" — **Verified**
+
+Source: `game-configs.high-school-2026.json` (user-downloaded from the competition's
+own config picker, where it was the pre-selected/default option, alongside "Terminal
+Online Season 8" and "Sandbox" as other choices), diffed programmatically against
+`game-configs.season8-generic.json.bak` (the file all of §1-§7 above and all of
+Milestones 1-3's benchmarking was actually built on). **This is now the active
+config** (copied to the repo-root `game-configs.json` that `engine.jar` actually
+reads — see §2.5.1 for how that was verified). Every numeric/mechanism difference
+found by a full structural diff of both JSON files:
+
+| Field | Old (Season 8 generic) | New (High School 2026) | Note |
+|---|---|---|---|
+| `resources.startingHP` (player health) | 40.0 | **30.0** | Lower player health pool — games end faster / smaller margins matter more. |
+| WALL (`FF`) `startHealth` | 75.0 | **40.0** | Upgrade: 150.0 -> **120.0**. Walls are much more fragile now (~47% lower HP unupgraded, ~20% lower upgraded). |
+| WALL `refundPercentage` | 0.75 | **0.8** | Slightly cheaper to remove-and-rebuild walls. |
+| SUPPORT (`EF`, "Encryptor") `cost1` (SP) | 7.0 | **4.0** | Notably cheaper. |
+| SUPPORT `shieldRange` | 0 (i.e. **no shield**) | **2.5** (upgrade -> 7) | **Mechanism change, not just a number**, see §2.5.2. |
+| SUPPORT `shieldPerUnit` | *(key absent)* | **2.0** (upgrade -> 4) | New/only-now-present field. |
+| SUPPORT `shieldBonusPerY` | *(key absent)* | 0.0 (upgrade -> **0.3**) | New/only-now-present field. |
+| SUPPORT `shieldDecay` | *(key absent)* | **0.0** | New/only-now-present field. |
+| SUPPORT `generatesResource1`/`generatesResource2` | `1` / upgrade `2` (i.e. **was a resource generator**) | *(both keys absent — generates nothing)* | **Mechanism change, not just a number**, see §2.5.2. |
+| TURRET (`DF`, "Destructor") `attackRange` | 2.5 | **4.5** | **+80% range** — a much bigger threat radius, see §2.5.3. |
+| TURRET `startHealth` | 90.0 | **75.0** | Lower HP partially offsets the range increase. |
+| TURRET upgrade `attackDamageWalker` | 15.0 | 16.0 | Trivial. |
+| SCOUT (`PI`, "Ping") `getHitRadius` | 0.01 | 0.03 | Small hitbox increase, likely negligible in practice. |
+| DEMOLISHER (`EI`, "EMP") `cost2` (MP) | 3.0 | **2.0** | Notably cheaper — changes the scout-vs-demolisher MP-efficiency math used throughout Milestones 1-3. |
+| INTERCEPTOR (`SI`, "Scrambler") `attackRange` | 3.5 | **4.5** | +28.6% range. |
+| INTERCEPTOR `attackDamageWalker` | 20.0 | **15.0** | **-25% damage vs mobile units** — this stat was NOT called out by the user's initial report and was found independently by our own full structural diff; interceptors are meaningfully weaker defensively against enemy mobile attackers than every prior benchmark assumed. |
+| INTERCEPTOR `getHitRadius` | 0.01 | 0.02 | Small hitbox increase. |
+| All units' `display` name string (`filter`->`Filter`, `encryptor`->`Encryptor`, etc.) | lowercase | Capitalized | Cosmetic only, does not affect `shorthand`/gameplay. |
+
+No other fields differ (confirmed by an exhaustive recursive diff of the two JSON
+files, including all resource-economy fields not listed above — `startingCores`,
+`startingBits`, `coresPerRound`, `bitsPerRound`, `bitGrowthRate`, `bitDecayPerRound`,
+`maxBits`, `roundStartBitRamp`, `bitRampBitCapGrowthRate`, all timing/compute-limit
+fields in §4.2, and the turn-100 cap/tie-break logic in §4.3, which lives in
+`engine.jar` bytecode, not the config file, and is therefore **unaffected** by this
+config swap).
+
+### 2.5.1 Verifying which config file `engine.jar` actually reads — **Verified**
+
+Decompiled `com.c1games.terminal.game.Config.useConfigFile()` (`javap -c -p`,
+JDK 17): the method does exactly `new File("").getAbsoluteFile()` (which resolves to
+the JVM process's current working directory, `user.dir`) concatenated with the
+literal string `"/game-configs.json"`, then prints a debug line `"Looking for Config
+file at: \n<path>"` before loading it with Gson. No environment variable, system
+property, or CLI flag is involved — **just a plain relative path resolved against
+whatever directory the engine was launched from.**
+
+Confirmed empirically, not just from bytecode: `scripts/run_match.sh` and our own
+`experiments/harness.py` (`cwd=REPO_ROOT`) both launch `java -jar engine.jar` from
+the repo root, so `<cwd>/game-configs.json` is always the file at the repo root.
+Ran one real local match (`java -jar engine.jar work python-algo/run.sh
+python-algo/run.sh`) after swapping the new config into place; the engine printed:
+
+```
+Looking for Config file at:
+/Users/sidshukla/Citadel Terminel/game-configs.json
+```
+
+i.e. exactly the repo-root file, confirming both the mechanism (bytecode) and its
+effect (a real run picking up the swapped-in file) agree. **Conclusion: simply
+replacing the repo-root `game-configs.json` file is sufficient and is the only
+mechanism relevant to local match running** — no other file, env var, or flag needs
+to change.
+
+### 2.5.2 SUPPORT/Encryptor mechanism change — **Verified**
+
+Under the OLD config, SUPPORT had `shieldRange: 0` (i.e. a shield radius of zero,
+meaning its shield mechanism — whatever `gamelib/unit.py`'s `shieldPerUnit`/
+`shieldRange`/`shieldBonusPerY` fields are for — could never actually apply to
+anything) but DID have `generatesResource1: 1` / upgrade `generatesResource2: 2`,
+i.e. it behaved as a **flat per-turn resource generator** (exact resource type not
+independently traced in engine bytecode this milestone, but the field names and its
+0-shield-range strongly support this reading — **Strongly supported**, matches
+§2.1's original Milestone-1-era framing of SUPPORT as "hedge our bets on the
+[unverified] shield mechanic" while it was actually contributing nothing shield-wise).
+
+Under the NEW (correct) config, SUPPORT has **no** `generatesResource1`/
+`generatesResource2` keys at all (confirmed absent by direct key lookup, not just a
+zero value), but now has real, non-zero `shieldRange: 2.5` (upgrade `7`),
+`shieldPerUnit: 2.0` (upgrade `4`), `shieldBonusPerY: 0.0` (upgrade `0.3`), and
+`shieldDecay: 0.0`. **This is a genuine mechanism swap: SUPPORT went from
+"resource-generating economy structure with a theoretically-present-but-inert shield
+field" to "real shield/support unit with zero economy function."** Any baseline
+logic that spawned SUPPORT for its resource-generation value (see §8/Milestone 4
+audit) is now spawning a unit that does something completely different.
+
+### 2.5.3 TURRET/Destructor range increase — **Verified, high strategic relevance**
+
+TURRET's `attackRange` going from 2.5 to 4.5 is an **80% increase**, large enough to
+change basic defensive-density assumptions: at 2.5 range, roughly 1 turret covers a
+narrow local neighborhood (this was the entire basis of Milestone 4's offline
+corner-weak-point analysis under the OLD config, since it directly used
+`attackRange` via `find_path_to_edge`/`get_attackers`'s range check — **that specific
+numeric analysis is invalidated by this range change and must be redone**, see §8).
+At 4.5, a single turret plausibly covers ground previously requiring 2-3
+overlapping placements, meaning existing "core defense" turret-anchor placements
+tuned for 2.5 range (e.g. `defense_v4_tiebreak`'s `core_turret_anchors` spacing) may
+now have far more overlap/redundancy than intended, or conversely may leave
+previously-safe gaps now covered — this needs re-benchmarking, not just re-reading.
+
 ## 3. Resources — **Verified** (`game-configs.json:158-172`, cross-checked against
 `gamelib/game_state.py:253-283` `project_future_MP`)
 
@@ -113,7 +233,8 @@ decompiled `com.c1games.terminal.game.PlayerStats` fields `metal`/`food`,
 `getMetal()`/`getFood()`).
 
 - `startingHP: 40.0` — starting player health (**not** structure HP; this is the score
-  you lose when breached).
+  you lose when breached). **Superseded — see §2.5: the correct "High School Terminal
+  2026" config has `startingHP: 30.0`.**
 - `startingCores (SP): 40.0`, `startingBits (MP): 5.0`.
 - `coresPerRound: 5.0` — flat SP income every turn.
 - `bitsPerRound: 5.0` plus ramp: `bitGrowthRate: 1.0` extra MP income per round,

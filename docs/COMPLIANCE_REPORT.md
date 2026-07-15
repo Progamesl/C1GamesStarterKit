@@ -1,8 +1,49 @@
 # Compliance Report
 
-Status as of Milestone 1 (initial pass). Tags: **Verified / Strongly supported /
-Hypothesis / Rejected**, per the top-level instructions — nothing here should be read
-as certain unless tagged Verified with a citation.
+Status as of Milestone 1 (initial pass), updated through Milestone 4. Tags:
+**Verified / Strongly supported / Hypothesis / Rejected**, per the top-level
+instructions — nothing here should be read as certain unless tagged Verified with a
+citation.
+
+## 0. CRITICAL Milestone 4 correction: wrong game config used through Milestone 3 — now fixed
+
+**Every benchmark result, win-rate number, and balance-sensitive design decision from
+Milestones 1 through 3 (including the `milestone1-fallback`, `milestone2-champion`,
+and `milestone3-champion` tags) was produced using `game-configs.json` as shipped by
+the generic public `correlone-one/C1GamesStarterKit` clone — the "Terminal Online
+Season 8" / sandbox-default config.** The user subsequently located the actual
+competition's own in-portal config picker and found it defaults to **"High School
+Terminal 2026"**, a materially different ruleset (see `docs/GAME_SPEC.md` §2.5 for
+the full field-by-field diff, decompiled-bytecode verification of exactly which
+config file the engine reads, and per-field strategic-relevance notes). Headline
+differences: player `startingHP` 40→30, WALL `startHealth` 75→40 (a ~47% cut),
+TURRET `attackRange` 2.5→4.5 (an 80% *increase*), DEMOLISHER MP cost 3→2, INTERCEPTOR
+`attackDamageWalker` 20→15 (a stat the user's own report did not flag, found only by
+our own exhaustive structural diff of both JSON files), and — most structurally
+significant — SUPPORT ("Encryptor") flipping from a **resource-generating economy
+unit with an inert (`shieldRange:0`) shield field** to a **real shield/support unit
+with zero economy function** (`generatesResource1`/`generatesResource2` keys are
+fully absent under the correct config, not just zeroed).
+
+**Verified fix, as of this milestone:** the repo-root `game-configs.json` (the exact
+file `engine.jar` reads for every local match — confirmed both by decompiling
+`Config.useConfigFile()`'s bytecode and by an actual local match run whose "Looking
+for Config file at:" debug line printed the repo-root path) has been replaced with
+the corrected "High School Terminal 2026" config. The old config is preserved,
+unmodified, at `game-configs.season8-generic.json.bak` for audit trail — it is no
+longer used for anything going forward except historical reference.
+
+**What this means for everything before this point:** all Milestone 1-3 win-rate
+numbers, the `defense_v3_lowcompute` compute-time tie-break fix, the
+`defense_v4_tiebreak` mode-transition fix, and the entire `turtle_survivor`
+corner-weak-point geometric analysis from the (in-progress, now superseded)
+Milestone 4 offensive-tactics work are all **balance-invalid** — they measure real
+things (crashes, compute time, control-flow bugs) under a ruleset we are not actually
+competing under. **Architecture and infrastructure lessons (git/tagging discipline,
+harness design, the `run.sh` permission-race finding in §1.1 below, the turn-100
+cap/tie-break rule itself, which lives in engine bytecode and is unaffected by this
+config) still apply and are not invalidated.** See `docs/MILESTONE_4_REPORT.md` for
+the full corrected-config re-benchmark and the resulting champion decision.
 
 ## 1. Language & submission format
 
