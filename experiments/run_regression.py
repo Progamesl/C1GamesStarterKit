@@ -70,6 +70,14 @@ DEFAULT_OPPONENTS = [
     # docs/REAL_OPPONENT_RESULTS.md sec 7 for sourcing/config-diff/benchmark detail.
     "public_opponents/funnel_uoft",
     "public_opponents/summer2022_6th",
+    # Milestone 7 additions: 3 synthetic lane-variation/composition stress
+    # opponents, built specifically to check that any Milestone 7 fix aimed
+    # at `travelling_salesmen_v33`'s single-fixed-lane rush generalizes
+    # rather than overfitting to that one exact pattern (per the user's
+    # explicit instruction) -- see docs/MILESTONE_7_REPORT.md sec 5.
+    "opponents/alternating_corner_rush",
+    "opponents/dual_corner_rush",
+    "opponents/scout_demolisher_corner_mix",
 ]
 
 
