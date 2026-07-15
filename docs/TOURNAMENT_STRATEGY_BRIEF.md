@@ -135,8 +135,12 @@ we lose to cleanly and repeatably.
   fix this but **introduced 4 new losses** against previously-solid
   opponents (see §6.2) — REJECTED as a net regression, not shipped. One
   final, narrowly-scoped, depth-only retry (`defense_v12_corner_box`, zero
-  offense/MP changes) — see `docs/MILESTONE_7_REPORT.md` §4 for the result;
-  check there for the current status if you need the latest word on this.
+  offense/MP changes) also failed to reverse the loss (delayed it from ~35
+  to ~37.5 turns, still 0/10) — its first draft introduced 2 more
+  regressions via an upgrade-ordering mistake, caught and fixed the same
+  round, leaving a final, regression-free-but-still-losing result
+  (`docs/MILESTONE_7_REPORT.md` §7). **This closes the `v33`-specific
+  investigation — no further attempts are planned or recommended.**
 - **Bottom line for the competition**: if you face an opponent that
   sustains a single-lane rush without over-committing early and without
   pausing, **assume we lose that specific matchup** unless a future patch

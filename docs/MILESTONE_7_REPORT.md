@@ -57,6 +57,16 @@ lane-variation stress opponents added this milestone) against each candidate.
   repository as documented, tested, rejected candidates (same convention as
   `defense_v7`/`v8`/`v9`) — `v11_econ_offense` explicitly flagged as
   actively worse than doing nothing, not merely "not better."
+- **Follow-up (§7): one further narrow, bounded, depth-only retry**
+  (`defense_v12_corner_box`, zero offense/MP changes) was tried per an
+  explicit follow-up instruction. It also does not reverse the `v33` loss.
+  Its first draft introduced 2 new regressions via an upgrade-*ordering*
+  mistake (not the structural change itself) — caught, root-caused, and
+  fixed the same milestone; the corrected version is regression-free
+  (296/306 across 29 opponents, same single `v33` loss) but still not
+  promoted, since it offers no proven benefit over the champion. This line
+  of investigation is now closed per the explicit instruction that
+  motivated it.
 
 ---
 
@@ -301,3 +311,108 @@ sweep does not offset the real regressions found in §2.3.
   state (not a global always-on posture change) — but per the above, this is
   now a "one more cheap, narrowly-scoped try, not a fourth full redesign"
   recommendation, not a call for another open-ended iteration cycle.
+
+---
+
+## 7. Follow-up: one narrow, bounded, depth-only retry (`defense_v12_corner_box`)
+
+Per an explicit follow-up instruction, agreed with §6's recommendation to
+stop *open-ended* `v33` redesigns, but requesting exactly one more narrow,
+bounded attempt: **depth/geometry only, zero changes to offense or MP
+spending of any kind**, learning directly from §3's bisection finding that
+offense-posture changes are the confirmed highest-collateral-risk area.
+
+### 7.1 The change
+
+`baselines/defense_v12_corner_box` is built directly from
+`defense_v6_encryptor_fix` (the actual champion, not `v10`/`v11`) — the
+smallest possible diff (87 lines), specifically so any effect observed can
+be attributed cleanly to this one change. `opportunistic_offense`,
+`desperation_offense`, `all_in_tied_strike`, `_stalemate_breaker`,
+`stall_with_interceptors`, and `_get_cached_lane` are all byte-for-byte
+identical to `v6`. The one structural change: a WALL "shoulder" at
+`[2,12]`/`[25,12]` (Verified non-edge tiles) plus a genuine second-layer
+TURRET at `[3,11]`/`[24,11]` (the same non-edge, in-range depth tile
+Milestone 6 patch #2 already validated), motivated by a direct
+`game-configs.json` cost/HP comparison: WALL is 60 HP/SP fully upgraded vs.
+TURRET's fixed 37.5 HP/SP (upgrading a TURRET adds zero HP, only
+damage/range) — see the module docstring for the full numbers.
+
+### 7.2 First result: still doesn't fix `v33`, AND a new self-inflicted regression
+
+- **`v33`: still 0/10, unchanged** (mean 41.1 turns survived vs. `v6`'s
+  ~35 — some delay, less than `v10_lockdown`'s ~53-turn delay, no reversal).
+  Consistent with every prior attempt.
+- **Full regression suite (29 opponents) surfaced 2 new regressions**:
+  `travelling_salesmen_frumblesnatch` 0/10 (was 10/10) and
+  `travelling_salesmen_adapdef` 7/10 (was 10/10) — the first time a
+  *purely structural, zero-offense-change* candidate has regressed
+  anything in this project's history.
+- **Root-caused, not just observed** (same discipline as §3): an isolated
+  diagnostic that reverted ONLY the upgrade-priority change (this
+  candidate had reordered `upgrade_core` to upgrade the new corner WALL
+  tiles *before* the TURRET damage upgrade, on the reasoning that more HP
+  right at the corner mattered more early — see the original module
+  docstring) — while keeping the new `corner_wall_shoulders`/
+  `corner_depth_turrets` structures in place — fixed BOTH regressions
+  completely in isolated testing (4/4 each vs. `frumblesnatch`/`adapdef`).
+  **The new corner structures were never the problem; delaying the TURRET
+  damage upgrade to prioritize WALL upgrades was.** This is directly
+  analogous to §3's finding about `v11`'s diagonal walls (Finding 4: SP
+  spent on non-damage-dealing structure at the expense of kill speed
+  causes smaller, secondary degradations) — except here it showed up from
+  an upgrade-*ordering* choice, not a placement choice.
+
+### 7.3 Correction applied, same file, re-tested from scratch
+
+Per this project's standing discipline (log the mistake honestly, fix it,
+re-test — same as §2/§3's handling of `v11`'s misleading comment), the
+upgrade-priority reorder in `defense_v12_corner_box/algo_strategy.py` was
+reverted (restored to `v6`'s original order: TURRET damage upgrade first,
+new corner structures upgraded in their natural place afterward, not
+jumped to the front) — see the `CORRECTION` comment in `upgrade_core` for
+the in-code record. **This is a bug-fix to the same one bounded attempt,
+not a new open-ended redesign** — the core idea being tested (WALL
+shoulders + depth TURRET at the corner) is unchanged; only a secondary,
+separable implementation choice (upgrade ordering) was reverted.
+
+**Full regression suite, re-run from scratch on the corrected version
+(29 opponents, n=10 each except `turtle_survivor` n=16, 306 total
+decided games):**
+
+| Result | Count |
+|---|---|
+| Wins | 296/306 |
+| The one loss | `travelling_salesmen_v33`, 0/10 (unchanged, expected) |
+| Regressions vs. `milestone5-champion` | **Zero** |
+
+**Every opponent that was 10/10 (or 16/16) against the champion is still
+10/10 (or 16/16) against the corrected `defense_v12_corner_box`, including
+both opponents the first draft regressed** (`travelling_salesmen_frumblesnatch`
+10/10, `travelling_salesmen_adapdef` 10/10, both re-confirmed at the full
+n=10, not just the n=4 isolated diagnostic). `v33` remains the sole loss,
+now surviving ~37.5 turns (mean) vs. `v6`'s ~35 — a small delay, not a fix.
+
+### 7.4 Verdict: honest, as instructed — the retry did not reverse the loss
+
+**`defense_v12_corner_box` does not fix the `travelling_salesmen_v33`
+loss.** It is, however, now a clean, regression-free candidate — the same
+status as `defense_v10_lockdown`, arrived at via a different (and smaller)
+structural change, with the added value of a second, independently-arrived-at
+confirmation that pure defensive depth/geometry changes alone (as opposed
+to offense-posture changes) do not close this specific gap, and a second,
+concrete demonstration that even a "purely structural" change can still
+regress something if it changes upgrade *priority/ordering* rather than
+just *placement* — a nuance worth remembering for any future attempt.
+
+**Not promoted to champion**, per the same reasoning as `v10_lockdown`
+(§4): it fixes nothing the current champion doesn't already handle, and
+switching adds a codebase change for zero proven benefit. Kept in the
+repository as a documented, tested, rejected candidate.
+
+**Per the explicit instruction that motivated this section: this line of
+investigation stops here.** No further `v33`-specific redesign is planned.
+`baselines/defense_v6_encryptor_fix` (`milestone5-champion`) remains the
+recommended champion — see `docs/TOURNAMENT_STRATEGY_BRIEF.md` for the
+practical, competition-ready synthesis of this and every other milestone's
+findings.
