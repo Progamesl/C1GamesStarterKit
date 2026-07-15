@@ -199,6 +199,24 @@ Summarized:
   is the same jar shipped in the same repo — **Strongly supported** that it matches
   tournament settings, since it's the official kit, but not independently confirmed
   against a live tournament match).
+- **Direct API/programmatic access to `terminal.c1games.com` (including its
+  `/playgroundlive` practice sandbox) — this agent has no way to log in, upload an
+  algo, run a match, or fetch a replay from that platform itself.** Every benchmark
+  in Milestones 1-5 was run against a *self-built* opponent corpus (direct builds,
+  hypothesis-driven adversarial opponents, and a "held-out" corpus built blind from
+  prior-art descriptions — see `docs/MILESTONE_5_REPORT.md` §0), which is a real
+  overfitting risk. As of this entry, the user has manually run our packaged
+  champion against several of that platform's named practice bots and reported
+  results back — see the new `docs/REAL_OPPONENT_RESULTS.md` for the full log. This
+  is genuinely non-self-built evidence (a first for this project), but it is
+  single-sourced, user-reported, not independently reproducible by this agent, and
+  very thin (3 opponents, 4 games) — it narrows this gap, it does not close it. The
+  practice sandbox's actual bot roster and what those bots represent (platform
+  practice bots vs. anything resembling past competitors) also remains
+  under-documented from any official source found so far — see
+  `docs/REAL_OPPONENT_RESULTS.md` §1 and §4 for the specific search performed and
+  what was and wasn't found. Actual live-ladder/tournament matches against other
+  real teams' algos remain completely inaccessible to this agent, as noted above.
 
 ## 5. Known repo quirks fixed locally (do not affect legality, just hygiene)
 

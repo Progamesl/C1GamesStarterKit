@@ -516,6 +516,23 @@ directly, for portals that accept a folder instead of a zip).
   timeout-damage-per-ms formula, crash-loss mechanics, all unverified from
   engine bytecode) remain open, unchanged; none of this milestone's work
   required resolving them.
+- **Added since this section was first written: every opponent in parts A and
+  B above (and every opponent across Milestones 1-5) is self-built** — either
+  by this project directly, as a hypothesis-driven adversarial opponent, or
+  as a "held-out" opponent built blind from prior-art descriptions. A 100%
+  win rate against a self-built corpus is evidence of robustness against
+  threats this project imagined, not against genuinely independent opponents
+  — a real overfitting risk. Two efforts are now in progress to address this
+  directly: (1) searching for genuinely independent, publicly-available
+  Terminal bot source code to use as black-box test opponents (in progress,
+  see the champion's rollback/provenance section for status), and (2) a
+  first, very thin batch of real evidence from the user manually running our
+  packaged champion against the official platform's own practice-sandbox
+  bots — see the new `docs/REAL_OPPONENT_RESULTS.md` (3 opponents, 4 games,
+  directionally positive but user-reported and not independently
+  reproducible by this agent — treat with real caution, not as a resolution
+  of this gap) and `docs/COMPLIANCE_REPORT.md` §4 for the compliance-level
+  framing of the same limitation.
 
 `milestone1-fallback`, `milestone2-champion`, `milestone3-champion`, and
 `milestone4-champion` all remain **completely untouched** as rollback

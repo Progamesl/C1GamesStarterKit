@@ -1,0 +1,259 @@
+# Real (non-self-built) opponent results
+
+Tags used throughout, per standing convention: **Verified / Strongly supported
+/ Hypothesis / Rejected**.
+
+## 0. What this document is, and its central limitation
+
+Every benchmark in `docs/MILESTONE_1_REPORT.md` through `MILESTONE_5_REPORT.md`
+was run against opponents built by this project (either directly, or as
+hypothesis-driven "adversarial countersearch" opponents, or as a "held-out
+corpus" built blind from prior-art descriptions — see `docs/MILESTONE_5_REPORT.md`
+§0 for that distinction). All of those, however methodologically varied, are
+still **self-built**: designed, written, and tuned by the same team that built
+the champion, which is a real overfitting risk the top-level instructions
+explicitly flag.
+
+This document logs the first opponent results that are **not self-built**: the
+user manually uploaded our actual current champion package
+(`submissions/milestone5_champion/defense_v6_encryptor_fix_algo_folder`,
+uploaded as a folder named `python-algo`) to the official competition
+platform's browser-based practice sandbox at
+`https://terminal.c1games.com/playgroundlive`, and ran it against several of
+that sandbox's built-in named practice bots, reporting results back via
+screenshots.
+
+**Central limitation, stated plainly up front: none of this is something this
+agent can independently run, rerun, or verify.** `terminal.c1games.com` is a
+login-gated, JavaScript-rendered web application; this agent's `WebFetch` tool
+only returns the static (pre-render) page shell for both
+`https://terminal.c1games.com/rules` and `https://terminal.c1games.com/playgroundlive`
+(confirmed by direct fetch — see §4), and there is no documented API access
+available to this agent for actually playing a match on that platform. Every
+result below is **user-reported from manual browser testing**, not something
+independently reproduced by this agent the way every other benchmark in this
+project's history has been (real local `engine.jar` runs, harness-collected
+JSON, replay files this agent can directly inspect). Treat the confidence
+level accordingly: this is real evidence, meaningfully different in kind
+from a self-built-corpus win, but it is single-sourced and not independently
+re-run.
+
+## 1. What these practice bots actually are — Hypothesis, not Verified
+
+The user's own assessment, which this agent has no way to independently
+confirm or refute from an authoritative source: these are **platform-provided
+practice bots** (a fixed practice-sandbox roster: `R1_Sawtooth`,
+`R2_Infiltrator`, `R3_Jukebox`, `R4_Champion`, `Punchbagrob`, `Foreman`,
+`Infiltrator`, `Captain`, `Ironclad`, and possibly others), **not** other
+competing teams' submitted algorithms and **not** past competition winners.
+
+A genuine, reasonable-effort search for official documentation was made and
+is logged in §4 below — **no official Correlation One / C1Games documentation
+naming or describing these specific bots was found.** The one piece of
+indirect, non-official corroboration found: a third-party student project
+repo, [`davidw0311/c1_terminal`](https://github.com/davidw0311/c1_terminal)
+(unrelated to this project, unrelated to the user), casually refers to
+"the terminalc1 boss algorithm 'IronClad'" as an opponent they tested their
+own algo against, and links a demo video of that matchup. This is consistent
+with the user's characterization (a fixed, platform-provided "boss" bot named
+Ironclad used for practice), but it is **one other player's own anecdotal
+description**, not an official source, and does not by itself confirm
+anything about the other named bots (`Sawtooth`, `Infiltrator`, `Jukebox`,
+`Champion`, `Punchbagrob`, `Foreman`, `Captain`).
+
+**Honest conclusion: it remains unknown, from any source available to this
+agent, exactly what these bots are** (hand-written by C1Games staff
+specifically as graduated-difficulty practice opponents is the most likely
+reading of the R1-R4 naming pattern plus "boss"-style names, but this is
+Hypothesis, not Verified) — beyond the reasonable, undisputed baseline fact
+that they are **not self-built by this project**, which is the property that
+actually matters for the overfitting concern this document exists to address.
+If Correlation One documentation describing these bots is ever found or
+provided, this section should be updated and the confidence level raised.
+
+## 2. Results log (user-reported, from manual browser testing)
+
+All matches: our current champion (`baselines/defense_v6_encryptor_fix`,
+tagged `milestone5-champion`), packaged and uploaded exactly as
+`submissions/milestone5_champion/defense_v6_encryptor_fix_algo_folder`,
+confirmed by the user to be our actual code (not the vanilla starter bot).
+
+| Opponent | Result | Rounds | Notes |
+|---|---|---|---|
+| `R4_Champion` | **WON 16-0** | 26 | `R4_Champion`'s reported cumulative compute time across the match was ~23.7s vs. our ~343ms — see §3 for why this is logged as a compliance/robustness data point, not just a fun fact. |
+| `Captain` | **WON 30 to -6** | 10 | Decisive blowout. `Captain` reportedly spent 0 mobile-unit (MP) points the entire match — a pure-turtle opponent that never mounted any offense and got breached, structurally similar to this project's own `opponents/turtle_survivor`/`single_leak_turtle` self-built archetypes, except this one is not self-built. |
+| `Ironclad` (run 1) | **TIE 14-14** | 100 | Reported stat panels for both players were suspiciously *identical* — 86 vs 86 structure points, 260/852 vs 260/852 resources, matching damage-taken percentages to the decimal on both sides. This does not look like two genuinely distinct strategies converging on the same numbers by chance; it looks more like either a mirror-match (our own algo somehow facing itself) or a display/UI artifact in the practice sandbox. **Not resolved — see §3.1.** |
+| `Ironclad` (run 2, same matchup immediately after) | **WON 28 to -1** | 54 | Decisive, and — critically — with **clearly asymmetric, internally coherent stats**: `Ironclad` ran a real, distinct strategy (heavy DEMOLISHER + INTERCEPTOR spam, zero SCOUTs, ~400 MP spent total), unlike anything in run 1's suspiciously-mirrored panel. |
+
+**Aggregate, stated honestly given the sample size:** 3 distinct named
+opponents, 4 total data points (2 of them the same matchup back-to-back), our
+champion's real record is 3 wins, 0 clean losses, 1 unresolved tie with
+strong reason to suspect it wasn't a genuine head-to-head result at all (§3.1).
+This is a **meaningfully positive but very thin** evidence base — nowhere
+near enough games, opponents, or independent verification to draw a strong
+conclusion, but directionally consistent with (not contradicting) the
+self-built-corpus results from Milestones 1-5.
+
+## 3. Open questions, flagged honestly rather than guessed at
+
+### 3.1 The Ironclad run-to-run variance (14-14 tie, then 28 to -1 win, same matchup)
+
+This is the important open question the user asked to be flagged clearly,
+and it is **not resolved** by anything available to this agent. Laying out
+what is and isn't known, without false confidence in either direction:
+
+**What is Verified from this project's own documentation
+(`docs/GAME_SPEC.md` §4.3, decompiled directly from `engine.jar` bytecode):**
+the engine has (at least) two genuinely non-deterministic mechanisms built
+into match resolution:
+1. **Tie-break #2** (only reached if HP is tied *and* cumulative compute time
+   is *also* exactly tied): decided by a literal `java.util.Random.nextBoolean()`
+   coin flip inside the engine itself. This is a real, confirmed source of
+   engine-level non-determinism, but it only explains *who wins* a tied game,
+   not why the reported *stats* (structure points, resources, damage
+   percentages) would come out identical between two players running
+   different code.
+2. The starter algo itself (and, by inspection, potentially other bots built
+   on the same starter-kit pattern) seeds `random.seed(seed)` in `__init__`
+   and — in the *starter* algo's own case, confirmed in this project's
+   earlier probes (`docs/GAME_SPEC.md` §6) — uses that randomness for
+   interceptor placement, making starter-kit-derived bots non-deterministic
+   run-to-run even against a fixed opponent.
+3. **Correction made while writing this document, worth stating plainly
+   rather than quietly fixing: our own champion is not fully deterministic
+   either.** A first draft of this section claimed it was; re-checking with
+   `grep -n "random\." baselines/defense_v6_encryptor_fix/algo_strategy.py`
+   turned up a real decision-time usage beyond the inert boilerplate
+   `random.seed()` call in `__init__`:
+
+   ```349:349:baselines/defense_v6_encryptor_fix/algo_strategy.py
+               deploy_location = deploy_locations[random.randint(0, len(deploy_locations) - 1)]
+   ```
+
+   — `stall_with_interceptors` (called from `PRESERVE` and `ALL_IN_TIED` mode,
+   `docs/MILESTONE_5_REPORT.md` §8) picks a **random** edge location for each
+   interceptor it spawns, every time it's called. This means any of this
+   project's own past benchmark games that reached turn 81+ in `PRESERVE` or
+   `ALL_IN_TIED` mode (confirmed in Milestone 5 to happen regularly against
+   long-game opponents — see `docs/MILESTONE_5_REPORT.md` §8.1) had a
+   genuinely randomized element in our own play, not just potential
+   opponent-side randomness. This doesn't change *which* mode is entered or
+   the overall strategy, and interceptors are a purely defensive, low-stakes
+   unit choice here (their placement rotates among safe friendly edge tiles),
+   so this is very unlikely to be strategically significant — but it is a
+   real source of run-to-run variance in our own historical benchmark data
+   that this project had not previously called out explicitly, and it
+   directly reinforces the caution urged below about single-game evidence.
+
+   Whether `Ironclad` (not our code, no source visibility) has an analogous
+   randomized-decision pattern is separately unknown either way.
+
+**What is not known:**
+- Whether `Ironclad` itself has some adaptive or randomized behavior that
+  could produce two different lines of play against the identical opponent
+  in back-to-back matches. Plausible given the starter-kit's own precedent
+  above, but **Hypothesis**, not confirmed — we have no access to `Ironclad`'s
+  source.
+- Whether the suspiciously-identical stat panel in run 1 reflects a genuine
+  (if implausible-looking) coincidence, a practice-sandbox-specific display
+  bug (e.g. showing the same player's panel twice, or a caching/refresh
+  artifact in the UI), or something else entirely (e.g. the sandbox
+  accidentally matching our algo against itself instead of against
+  `Ironclad` for that one run). **No way to distinguish between these
+  from a screenshot after the fact** — this would need either the actual
+  `.replay` file (not available to this agent; the practice sandbox is a
+  separate system from the local `engine.jar` this project's harness uses,
+  and there is no indication the two produce interchangeable replay files)
+  or a repeat of the same test with more careful logging.
+- Whether the local `engine.jar` this project's entire benchmark corpus has
+  been run on is fully deterministic for a fixed pair of *deterministic*
+  algos, aside from the two known randomness sources above. This project's
+  own harness has never specifically tested for this (every self-built
+  opponent benchmark implicitly assumed determinism-modulo-the-known-sources,
+  but never froze all inputs including any engine-internal randomness and
+  diffed repeated runs byte-for-byte).
+
+**Practical consequence, stated as the user requested: this is a real reason
+to treat single-game evidence — including this project's own past win-rate
+claims from earlier milestones — with somewhat more caution than before,
+specifically regarding any claim that rests on a *single* game rather than a
+real sample size.** This project's standing acceptance discipline (never
+accept/reject based on small-sample noise, always use n=8-20 per matchup) was
+already designed for a version of this concern (opponent-side variance in
+non-adaptive-but-randomized play, e.g. the starter algo's own randomized
+interceptor placement), and continues to be the right mitigation — but this
+finding is a concrete, real-world instance of exactly that variance showing
+up in a single side-by-side pair of games, which is a good reason not to
+loosen that discipline, and a reason to be skeptical of any *n=1* result
+(ours or anyone else's) going forward, including isolated screenshots like
+these ones.
+
+### 3.2 `R4_Champion`'s compute time (~23.7s vs. our ~343ms)
+
+Logged as a compliance/robustness data point per the user's request, not
+just a curiosity: this project's own `docs/GAME_SPEC.md` §4.2 documents a
+5000ms **soft** per-turn limit and a 35000ms **hard** per-turn limit
+(`waitTimeBotSoft`/`waitTimeBotMax`, Verified from `game-configs.json` and
+cross-checked against decompiled `PlayerStats` timeout fields). `R4_Champion`'s
+~23.7s **cumulative** time over 26 rounds averages to roughly 911ms/turn —
+comfortably under the 5s soft limit, so this is not evidence of `R4_Champion`
+approaching a timeout. What it *is* evidence of: our own champion is
+dramatically faster (343ms cumulative over 26 rounds ≈ 13ms/turn on average),
+which matters directly for the compute-time tie-break (`docs/GAME_SPEC.md`
+§4.3, tie-break #1: on an exact HP tie, lower cumulative time wins) —
+consistent with, and now with one more real data point supporting, this
+project's standing design principle (carried since Milestone 2/3) of keeping
+per-turn computation minimal specifically to win that tie-break margin.
+
+## 4. Search for official documentation of the practice bot roster
+
+Per the user's request, a genuine (not perfunctory) search was made for
+official Correlation One / C1Games documentation of what these named practice
+bots are, before concluding this remains unknown:
+
+- Direct `WebFetch` of `https://terminal.c1games.com/rules` and
+  `https://terminal.c1games.com/playgroundlive`: both return only the static
+  landing-page shell (site stats: player/match/algo counters), not the actual
+  rules/practice content — confirming (Verified, by direct observation) that
+  this is a JavaScript-rendered single-page application this agent's fetch
+  tooling cannot render past the login-gated shell. The "Learn" nav link the
+  user's screenshot shows was not independently reachable.
+- Direct `WebFetch` of `https://correlation-one.github.io/C1GamesStarterKit/`
+  (the starter kit's own doc server, linked from the official GitHub repo):
+  no mention of `Ironclad`, `Sawtooth`, `Infiltrator`, `Jukebox`, `Champion`,
+  `Punchbagrob`, `Foreman`, or `Captain` anywhere in the fetched page.
+- Multiple web searches for combinations of the specific bot names alongside
+  "terminal c1games" / "practice" / "boss" turned up **no official source**.
+  One search's own AI-generated synthesis incorrectly claimed these terms
+  "do not exist" in the context of the Terminal game and speculatively
+  associated "R1-R4" with an unrelated mobile game — flagged here explicitly
+  as a demonstration that **web-search AI summaries in this specific case
+  were actively wrong/unreliable**, not as a real finding; this document only
+  relies on directly-quoted primary source content, never a search engine's
+  own synthesized summary.
+- The one relevant (non-official) hit, already covered in §1:
+  `davidw0311/c1_terminal`'s casual reference to "the terminalc1 boss
+  algorithm 'IronClad'."
+
+**Conclusion: no official documentation of this practice bot roster was
+found.** This is stated plainly rather than papered over — if the user or a
+future session finds the actual "Learn" page content (e.g. by being logged
+in, which this agent cannot do), it should be added here.
+
+## 5. What this document does not do
+
+This is a documentation/evidence-logging task, not a new benchmark-and-decide
+cycle. Per the user's explicit instruction:
+- **No champion change.** `baselines/defense_v6_encryptor_fix`
+  (`milestone5-champion`) remains the current champion.
+- **No new tag.** These results, while directionally positive, are far too
+  thin (3 opponents, 4 games, entirely user-reported and unreproducible by
+  this agent) to be treated as a real acceptance/rejection signal the way
+  Milestones 1-5's real local benchmarks were.
+- **This does not close the "overfitting to our own corpus" gap** raised at
+  the top of this document — it's a first, genuinely-independent (if
+  extremely thin) data point in that direction, not a resolution of it. See
+  `docs/COMPLIANCE_REPORT.md`'s open-gaps section for how this is now
+  reflected there, and the black-box-GitHub-opponent research (paused, not
+  abandoned, per the user's instruction) as the other in-progress avenue
+  toward closing it further.
