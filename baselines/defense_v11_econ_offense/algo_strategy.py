@@ -496,25 +496,55 @@ class AlgoStrategy(gamelib.AlgoCore):
         # our anchors are spaced closely enough that the range loss rarely opens a
         # gap (see docs/MILESTONE_4_REPORT.md for the regression numbers), but this
         # is no longer a "free" upgrade the way it was under the old config.
-        # Milestone 7 fix (module docstring sec 2), REVISED this iteration:
-        # while a side is in lockdown, skip upgrading EVERYTHING, including
-        # the contested cluster's own turrets. Earlier v10 kept upgrading the
-        # contested cluster on the theory that dmg 5->16 is "free" since
-        # range coverage doesn't drop at these distances -- true, but a
-        # DEMOLISHER only has 5 HP, so BOTH the unupgraded 5 dmg AND the
-        # upgraded 16 dmg already one-shot it: the entire upgrade (4 SP each)
-        # buys ZERO extra kill capacity against precisely the threat this
-        # lockdown mode exists to counter, and TURRET upgrades don't add HP
-        # (Verified from game-configs.json: only WALL's upgrade adds
-        # startHealth; TURRET's upgrade only changes cost/range/dmg). That
-        # 4 SP is strictly better spent on `reactive_defense`'s raised
-        # lockdown cap (2 SP per new TURRET, i.e. TWO extra defenders for the
-        # price of one upgrade that does nothing here) -- so during lockdown,
-        # upgrades are paused everywhere, full stop.
+        # Milestone 7 fix (module docstring sec 2): while a side is in
+        # lockdown, skip upgrading EVERYTHING except the contested cluster
+        # itself -- the opposite corner cluster, the center anchors, AND the
+        # front wall row -- all of that SP is better spent on the contested
+        # side's rebuild via reactive_defense's raised cap below. The
+        # contested side's OWN cluster keeps upgrading normally.
+        #
+        # CORRECTION (Milestone 7, logged honestly rather than silently
+        # fixed): an earlier iteration of this file ALSO skipped the
+        # contested cluster's own upgrades during lockdown, and this exact
+        # comment block previously claimed that reverting THAT (i.e. the code
+        # below, unchanged since) was the fix for a real regression against
+        # `travelling_salesmen_adapdef`/`travelling_salesmen_frumblesnatch`
+        # (both previously 10/10 wins for milestone5-champion, per
+        # docs/MILESTONE_6_REPORT.md sec 5) -- and that claim was WRONG,
+        # caught by re-running the actual regression suite rather than
+        # trusting the comment: `baselines/defense_v10_lockdown` (which
+        # already has this exact "contested cluster keeps upgrading" logic,
+        # unchanged) beats both opponents 4/4 in isolation, proving this
+        # upgrade-skip logic was never the cause. Bisection (4 isolated
+        # variants layered individually onto v10_lockdown, each smoke-tested
+        # n=4 against `travelling_salesmen_adapdef`) found the REAL driver is
+        # this file's `opportunistic_offense` rewrite below (module docstring
+        # Finding 3: continuous, un-paused, 100%-MP-committed offense from
+        # turn 6 onward, every turn, replacing v10's paced/gated posture) --
+        # in isolation on top of v10_lockdown, Finding 3 ALONE drops
+        # `travelling_salesmen_adapdef` from 4/4 to 1/4. `diagonal_edge_walls`
+        # (Finding 4) contributes a smaller secondary degradation in
+        # isolation (4/4 -> 3/4) but is not the primary cause. Neither
+        # Finding 2 (lane-list restore) nor `RECOMPUTE_INTERVAL` change
+        # regresses at all in isolation (4/4). Root-cause hypothesis:
+        # committing 100% of MP to offense every turn, unconditionally, works
+        # against `travelling_salesmen_v33`'s specific sustained-rush pattern
+        # (module docstring Finding 3) but removes the MP-funded
+        # `stall_with_interceptors` slack that v10's paced/gated posture was
+        # actually relying on to survive weaker, less sustained single-lane
+        # rushes -- "match their posture" is not a safe general rule any
+        # more than "upgrade is free against Demolishers" was. As of this
+        # writing this regression is NOT fixed; `defense_v11_econ_offense`
+        # is not recommended for promotion over milestone5-champion. See
+        # docs/MILESTONE_6_REPORT.md and follow-up notes for the full,
+        # currently-honest state of this investigation.
         turret_anchors_to_upgrade = self.core_turret_anchors
         upgrade_wall_front = True
-        if self.lockdown_side is not None:
-            turret_anchors_to_upgrade = []
+        if self.lockdown_side == 'left':
+            turret_anchors_to_upgrade = self._left_cluster
+            upgrade_wall_front = False
+        elif self.lockdown_side == 'right':
+            turret_anchors_to_upgrade = self._right_cluster
             upgrade_wall_front = False
         game_state.attempt_upgrade(turret_anchors_to_upgrade)
         if upgrade_wall_front:
