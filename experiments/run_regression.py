@@ -33,6 +33,17 @@ DEFAULT_OPPONENTS = [
     "opponents/single_leak_turtle",
     "opponents/sunk_cost_recipe_switcher",
     "opponents/turtle_survivor",
+    # Milestone 5 additions: SUPPORT-targeting adversarial opponents (built
+    # against defense_v6_encryptor_fix's specific placement/upgrade logic)
+    # plus a held-out corpus built blind from unimplemented prior-art
+    # archetypes (docs/STRATEGIC_PRIOR_ART_REPORT.md) -- see
+    # docs/MILESTONE_5_REPORT.md.
+    "opponents/support_sniper",
+    "opponents/corner_lane_baiter",
+    "opponents/shield_race_rusher",
+    "opponents/signature_detector",
+    "opponents/minimax_lookahead",
+    "opponents/predictor_opponent",
 ]
 
 

@@ -198,11 +198,30 @@ class AlgoStrategy(gamelib.AlgoCore):
     def desperation_offense(self, game_state):
         """Behind on health near the turn cap: normal play is losing this game on
         its current trajectory, so spend everything offensively rather than
-        continuing to conserve (prior-art hypothesis #4, docs/GAME_SPEC.md 4.3)."""
+        continuing to conserve (prior-art hypothesis #4, docs/GAME_SPEC.md 4.3).
+
+        Milestone 5 fix: this used to hardcode "spawn exactly 2 demolishers,
+        dump the rest on scouts" regardless of how much MP was actually
+        available. That was already a fairly arbitrary allocation, but the
+        corrected config's DEMOLISHER MP cost (3 -> 2) makes it worse: 2
+        demolishers is now only 4 MP, a shrinking (and, at any real late-game
+        MP total, tiny) fraction of what's on hand, so nearly everything ends
+        up as scouts no matter the actual budget. Switched to the same
+        fraction-of-current-MP demolisher budget as all_in_tied_strike (same
+        "we're spending everything, every remaining turn" intent, so the same
+        offensive mix logic applies) -- confirmed via a synthetic on_turn
+        probe (mocked GameState, no real match needed since this branch has
+        never been observed to trigger in 5 milestones of benchmarking -- see
+        docs/MILESTONE_5_REPORT.md) that this now produces the same
+        demolisher:scout ratio as all_in_tied_strike for the same MP total,
+        instead of an almost-fixed demolisher count."""
         best = self._get_cached_lane(game_state)
+        mp = game_state.get_resource(MP)
         demolisher_cost = game_state.type_cost(DEMOLISHER)[MP]
-        if game_state.get_resource(MP) >= demolisher_cost * 2:
-            game_state.attempt_spawn(DEMOLISHER, best, 2)
+        demolisher_budget = mp * ALL_IN_DEMOLISHER_MP_FRACTION
+        num_demolishers = int(demolisher_budget // demolisher_cost)
+        if num_demolishers > 0:
+            game_state.attempt_spawn(DEMOLISHER, best, num_demolishers)
         game_state.attempt_spawn(SCOUT, best, 1000)
 
     def _decay_breach_history(self):
