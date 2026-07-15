@@ -210,6 +210,36 @@ field" to "real shield/support unit with zero economy function."** Any baseline
 logic that spawned SUPPORT for its resource-generation value (see §8/Milestone 4
 audit) is now spawning a unit that does something completely different.
 
+**Milestone 4 update — the shield formula itself, previously an open gap (§7), is
+now Verified, not just Strongly-supported-from-field-names.** Built a dedicated
+controlled probe (`experiments/shield_probe/` vs. a fully passive partner that never
+attacks, so any health change is attributable only to the shield, not combat) and
+read the resulting replay's per-frame unit health directly:
+
+- SUPPORT shields **only mobile units**, never stationary structures — a WALL and a
+  TURRET placed directly adjacent (distance 1-2) to an upgraded SUPPORT for 30 full
+  turns showed **zero** health change (stayed exactly at base HP throughout), while a
+  SCOUT whose path carried it through the same SUPPORT's radius gained a real,
+  reproducible HP bonus. A second SCOUT deployed on a lane that never came within
+  `shieldRange` of any SUPPORT never gained anything (15.0 HP flat, every sample).
+- The bonus amount matches **`shieldPerUnit + shieldBonusPerY * support_y`** (the
+  SUPPORT structure's own y-coordinate, not the shielded unit's) to one decimal
+  place: an upgraded SUPPORT at y=8 (`shieldPerUnit=4.0`, `shieldBonusPerY=0.3`)
+  produced a scout HP bonus of exactly `4.0 + 0.3*8 = 6.4` (15.0 → 21.4 HP) in every
+  observed case; a second upgraded SUPPORT at y=3 produced exactly `4.0 + 0.3*3 =
+  4.9` (15.0 → 19.9 HP) when it was the only one in range.
+- Shields from multiple SUPPORTs **stack**: a unit passing through both of the above
+  SUPPORTs' radii showed `15.0 + 6.4 + 4.9 = 26.3` HP.
+- `shieldRange` is a real, enforced cap, not "unlimited on my own side": structures
+  and lanes placed 7-8 tiles away (beyond even the upgraded range of 7) never showed
+  any effect.
+
+**Strategic implication (see `docs/MILESTONE_4_REPORT.md` for the applied fix and
+its regression results):** since the bonus scales with the SUPPORT's own y position,
+forward-but-still-screened placement is strictly better than tucking SUPPORT deep in
+your own backfield, and since only mobile units benefit, SUPPORT should be
+positioned relative to your own attack lanes, not your defensive structures.
+
 ### 2.5.3 TURRET/Destructor range increase — **Verified, high strategic relevance**
 
 TURRET's `attackRange` going from 2.5 to 4.5 is an **80% increase**, large enough to
@@ -223,6 +253,24 @@ overlapping placements, meaning existing "core defense" turret-anchor placements
 tuned for 2.5 range (e.g. `defense_v4_tiebreak`'s `core_turret_anchors` spacing) may
 now have far more overlap/redundancy than intended, or conversely may leave
 previously-safe gaps now covered — this needs re-benchmarking, not just re-reading.
+
+### 2.5.4 TURRET upgrade now DECREASES range — **Verified, previously unflagged**
+
+A second, previously-unflagged consequence of the same field, found while building
+Milestone 4's baseline patches by reading `game-configs.json` directly (not just the
+diff table in §2.5): TURRET's `upgrade.attackRange` value itself did **not** change
+between the old and new config — it is `3.5` in both. Under the OLD config this was
+an *increase* over the 2.5 base (upgrading made both damage AND range better — a
+strictly dominant upgrade). Under the NEW config, base `attackRange` is already 4.5,
+so upgrading a TURRET now **decreases** its range from 4.5 to 3.5 (a real -22% range
+cost) while increasing `attackDamageWalker` from 5.0 to 16.0. This is very plausibly
+an oversight in how the "High School Terminal 2026" config was assembled (only the
+base stat looks intentionally rebalanced), but the engine reads it literally either
+way, so it is a real mechanical fact for any strategy that upgrades turrets: it is no
+longer a free stat increase, it's a range-for-damage tradeoff, and dense/overlapping
+turret layouts are far more resilient to this tradeoff than sparse ones (Milestone 4
+tests both — see `docs/MILESTONE_4_REPORT.md` section 4 for the actual regression
+numbers).
 
 ## 3. Resources — **Verified** (`game-configs.json:158-172`, cross-checked against
 `gamelib/game_state.py:253-283` `project_future_MP`)
