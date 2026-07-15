@@ -296,6 +296,21 @@ decompiled `com.c1games.terminal.game.PlayerStats` fields `metal`/`food`,
   (exact formula not traced in engine bytecode — **Strongly supported**, not fully
   Verified against engine).
 - SP does **not** appear to decay (no `spDecayPerRound` key in config).
+- **`coresForPlayerDamage: 1.0` — Verified (Milestone 7) to be a REAL, ACTIVE
+  mechanic, not just a config field nobody reads.** Landing player-breach
+  damage on your opponent grants the ATTACKER bonus SP income that same
+  turn, at a 1:1 ratio (1 SP per point of breach damage dealt), IN ADDITION
+  to the flat `coresPerRound`. Confirmed via a replay-arithmetic
+  cross-check (not assumed from the field name): across 8+ independent
+  turns in `experiments/replays/m6_public_v6fix_vs_v33_n20_000.replay`,
+  `SP_gained_this_turn` matches `coresPerRound (5.0) + player_damage_dealt_
+  this_turn * 1.0 - SP_spent_this_turn` exactly, turn after turn (see
+  `docs/MILESTONE_7_REPORT.md` sec 3 for the full worked turn-by-turn table).
+  **Strategic implication:** an offense that actually lands hits funds its
+  own side's SP economy (defense rebuild budget included) directly, not
+  just points on the scoreboard -- a real, exploitable compounding loop that
+  no baseline in this repo through Milestone 6 was written to specifically
+  pursue.
 
 ## 4. Turn Structure, Timing & Win Conditions
 
