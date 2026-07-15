@@ -273,17 +273,106 @@ the same per-attempt format as sections 1-2/5/8.3 above.
 | `opponents/corner_lane_baiter` | The champion's own `_get_cached_lane`/`least_damage_spawn_location` heuristic has **zero awareness of the SUPPORT's shield radius** — it only minimizes projected turret damage along the path. SUPPORT sits at `[[13,9],[14,9]]`; the alternate lane option `[3,10]` is `sqrt(10^2+1^2)≈10.05` tiles away, outside even the upgraded 7-tile shield range. Pure static defense (no offense), deliberately dense across the center columns (x∈[6,21], where `[13,0]`'s path runs) and deliberately weak at the corners (where `[3,10]`'s path runs), to try to bait the heuristic into consistently picking the corner lane and never collecting the shield bonus. | **Rejected as tested — hypothesis about the mechanism is real, but this specific opponent design did not trigger it.** 10/10 games won by the champion, every single one ending at exactly turn 72, health 30.0 vs -2.0 (`experiments/results/20260715-033811_m5_v6fix_vs_corner_lane_baiter.jsonl`). Direct replay evidence (not inference): **936 `shield` events fired over the course of the game**, all from the SUPPORT pair at `[13,9]`/`[14,9]` onto scouts near `[14,2]`/`[15,3]` — i.e. the champion's offense kept using the *central* lane the entire game despite the deliberately asymmetric defense, so the SUPPORT bonus (`6.7` HP/unit, matching the Verified upgraded formula `4.0 + 0.3*9`) was applied continuously, not avoided. Running the identical opponent against the control (`defense_v4_tiebreak`/`m4_v4carry`) produced the **exact same 936 shield events** and the **exact same 30.0/-2.0 result in all 10 games** (`experiments/results/20260715-034234_m5_v4carry_vs_corner_lane_baiter.jsonl`) — confirming `v4carry`'s own (unupgraded, un-relocated) SUPPORT at `[13,3]` also shields the same central-lane scouts, just for less (`2.0` HP/unit, no `shieldBonusPerY` since never upgraded). The champion's lane choice was not redirected by this design; why the denser center didn't score worse than the sparser corner in the heuristic's own path-damage sum was not further isolated (an honest open sub-question, not resolved here). |
 | `opponents/shield_race_rusher` | SUPPORT upgrades strictly last in `upgrade_core`, after all 10 turret anchors and 12 wall cells — a real (if unverified until now) upgrade-timing window where it sits at weaker unupgraded stats. A real (not minimal) defense of its own, paired with a *sustained* (not one-off) central-lane rush starting turn 3, to maximize exposure to this window via a non-adaptive, "dumb but persistent" mechanism, as a cross-check on `support_sniper`'s more targeted approach. | **Rejected as an effective counter — 10/10 games lost by the attacker** (`experiments/results/20260715-033953_m5_v6fix_vs_shield_race_rusher.jsonl`), by turn 12-14, 0 crashes. Replay inspection (`m5_v6fix_vs_shield_race_rusher_000.replay`): SUPPORT present in 249/898 frames, health never below full 30, **zero shield events fired all game** — again, the match resolves (via the champion's static core alone) before the SUPPORT mechanism has enough turns to engage in either direction. The control (`v4carry`) produced statistically indistinguishable margins on the same opponent (`experiments/results/20260715-034422_m5_v4carry_vs_shield_race_rusher.jsonl`) — turn counts and health margins overlap within the noise expected from the interceptor-placement randomness both share, no systematic gap either way. |
 
-**Honest overall verdict: no exploitable weakness found.** All three
-purpose-built opponents lost 10/10 (or, for `corner_lane_baiter`, "won" 0/10
-in the sense of never even redirecting the champion's lane choice), 0
-crashes anywhere, in both p1/p2 seats. Per the standing acceptance
+**Honest overall verdict for this section: no exploitable weakness found.**
+All three purpose-built opponents lost 10/10 (or, for `corner_lane_baiter`,
+"won" 0/10 in the sense of never even redirecting the champion's lane
+choice), 0 crashes anywhere, in both p1/p2 seats. Per the standing acceptance
 discipline, this is a genuine negative result, not proof the design is
 flawless: it means three specific, reasoned, adaptively-built attack
 mechanisms (direct structural sniping, lane-routing baiting, sustained
 timing-window pressure) did not find a regression relative to
 `defense_v4_tiebreak`, under real n=10-per-opponent sampling in both seats —
-see `docs/MILESTONE_5_REPORT.md` section 4 for what remains untested.
-`baselines/defense_v6_encryptor_fix` (`milestone4-champion`) is **not**
-patched and **not** replaced; it remains the champion. `milestone1-fallback`,
-`milestone2-champion`, and `milestone3-champion` all remain **unchanged** as
-safe rollback points.
+see `docs/MILESTONE_5_REPORT.md` section 4 for what remains untested. (This
+verdict is about the SUPPORT-targeted countersearch specifically — see
+sections 11-12 below for two further checks done in the same milestone, one
+of which *did* find and fix something.)
+
+## 11. Milestone 5: held-out corpus check (opponents built blind, not derived from `defense_v6_encryptor_fix`'s code)
+
+Full rationale in `docs/MILESTONE_5_REPORT.md` section 7. Three opponents
+were built strictly from unimplemented archetypes in
+`docs/STRATEGIC_PRIOR_ART_REPORT.md`, without referencing the champion's
+source, specifically to check that section 10's "no exploit found" wasn't an
+artifact of only ever testing SUPPORT-shaped attacks against a SUPPORT-shaped
+countersearch.
+
+| Opponent | Archetype (never previously implemented in `opponents/`) | Result vs `defense_v6_encryptor_fix` (n=10, both seats) |
+|---|---|---|
+| `opponents/signature_detector` | §3.5 signature detection + counter-strategy switching: tracks the champion's mobile-spawn pattern; a repeated pattern for `SIGNATURE_THRESHOLD` turns triggers a reinforce-and-counter-attack switch. | **10/10 champion**, 0 crashes, turns 12-34 (`experiments/results/20260715-040040_m5_heldout_v6fix_vs_signature_detector.jsonl`). |
+| `opponents/minimax_lookahead` | §3.2 turn-level simulation/minimax lookahead: scores several candidate recipes per turn (MP efficiency, projected path damage, unspent-SP value) and plays the best-scoring one, under an explicit 400ms time budget. | **10/10 champion**, 0 crashes, turns pinned at 18 (deterministic given its fixed recipe set; seat-swap is the only variation) (`experiments/results/20260715-050241_m5_heldout_v6fix_vs_minimax_lookahead.jsonl`). |
+| `opponents/predictor_opponent` | §3.7 opponent-move prediction: detects a recurring spawn pattern at a consistent turn-offset (every 2/3/4 turns) and preemptively reinforces the predicted side *before* the champion's move that turn, rather than reacting after the fact. | **10/10 champion**, 0 crashes, turns 18-70 — the widest/most varied matchup in the whole corpus (`experiments/results/20260715-050359_m5_heldout_v6fix_vs_predictor_opponent.jsonl`). |
+
+One implementation bug was caught and fixed before benchmarking:
+`signature_detector` and `predictor_opponent` both initially misread
+`on_action_frame`'s raw per-unit `player_index` (1-indexed, 1=self/2=opponent
+— confirmed against `python-algo/algo_strategy.py`'s own handling of the same
+field) as if it used `GameUnit.player_index`'s 0=self/1=enemy convention,
+causing both opponents to track their own spawns instead of the champion's.
+Fixed to `if player_index != 2: continue` in both files.
+
+**Honest verdict: no exploit found.** All three held-out opponents lost
+10/10, 0 crashes, real and sometimes long/varied games (not instant losses
+regardless of play) — meaningfully strengthens confidence beyond section 10
+alone, since this is a second, methodologically-independent batch that also
+failed to find a weakness, though it is still not proof of invulnerability.
+
+## 12. Milestone 5: endgame policy re-check under the corrected config — one real fix found
+
+Full analysis in `docs/MILESTONE_5_REPORT.md` section 8. Unlike sections
+10-11, this check **did** find something real, though narrow: the
+`all_in_tied_strike`/`desperation_offense`/`ENDGAME_TURN_THRESHOLD` logic was
+carried over unchanged from before the config correction and had never been
+re-verified against the corrected numbers.
+
+- **The ahead/tied/behind framework and `ALL_IN_TIED` mode are Verified still
+  functional and reachable** under the corrected config — direct proof via a
+  controlled mirror-match test (`defense_v6_encryptor_fix` vs itself, n=6,
+  `experiments/results/20260715-050822_m5_endgame_mirror_match.jsonl`): 6/6
+  games reached an exact 14.0-vs-14.0 tie at turn 100, `ALL_IN_TIED` engaged
+  for all 19 endgame turns on both sides, 0 crashes, decided by the
+  compute-time tie-break (p1 376ms vs p2 500ms cumulative) — consistent with
+  section 6.2's tie-break finding, now reconfirmed under the new config.
+- **But against every actual opponent in the corpus (5 distinct long-game
+  opponents, dozens of games across all milestones), only `NORMAL` and
+  `PRESERVE` ever appear near the cap — never `ALL_IN_TIED`, never
+  `DESPERATE`.** This is a real, config-driven change from Milestone 3's
+  finding (exact ties were the *dominant* outcome against `turtle_survivor`
+  under the old config); under the corrected config the champion instead
+  ends up strictly and heavily ahead in the same matchups. Not a bug — a
+  change in which matchups actually produce a tie.
+- **The real finding:** `desperation_offense` hardcoded "spawn exactly 2
+  demolishers, dump the rest on scouts," while its sibling
+  `all_in_tied_strike` (identical "spend everything" intent, different
+  trigger condition) budgets a *fraction* of current MP
+  (`ALL_IN_DEMOLISHER_MP_FRACTION=0.4`) for demolishers instead. The
+  corrected config's cheaper `DEMOLISHER` (MP cost 3->2) makes the hardcoded
+  count an even smaller, more arbitrary share of a realistic late-game MP
+  pool than before (4 MP out of a sampled 35 MP budget = 11%, vs
+  `all_in_tied_strike`'s 40% at the same budget). **This branch has never
+  triggered in any recorded game across 5 milestones** (0 real losses have
+  ever reached turn 78), so verification was done via a synthetic
+  mocked-`GameState` probe rather than a real-match before/after: before the
+  fix, `MP=35` produced `{'EI': 2, 'PI': 31}`; after, `{'EI': 7, 'PI': 21}` —
+  identical to `all_in_tied_strike`'s own output at the same MP total.
+- **`PRESERVE` mode's conservatism was checked and found still appropriate**:
+  every observed `PRESERVE` engagement has `my_hp` pinned at the full 30 HP
+  starting value against an opponent already near-dead — an already-maximal,
+  secured lead, not a marginal one a more aggressive policy might improve.
+- **Patch applied** (commit `520345b`): `desperation_offense` now uses the
+  same fraction-of-MP demolisher budget as `all_in_tied_strike`. **Full
+  20-opponent regression re-run after the fix (the original 14 plus all 6
+  new opponents from sections 10-11, now folded permanently into
+  `experiments/run_regression.py`'s `DEFAULT_OPPONENTS`): 172/172 games won,
+  0 crashes** (`experiments/results/20260715-05*_m5_final_regression_*.jsonl`).
+
+**Honest open gap:** `DESPERATE` mode (the "behind" counterpart to
+`ALL_IN_TIED`) remains **entirely unverified in real play** — 0 occurrences
+in any recorded game ever, because the champion has never actually lost a
+game reaching turn 78. The fix above is sound by code-review and the
+synthetic probe, not by real-match evidence, since no real match exercises
+this branch.
+
+**Champion updated as a result of this section: `baselines/defense_v6_encryptor_fix`
+(patched) is now tagged `milestone5-champion`.** `milestone1-fallback`,
+`milestone2-champion`, `milestone3-champion`, and `milestone4-champion` all
+remain **completely unchanged** as safe rollback points.
