@@ -257,3 +257,33 @@ sound defensive rationale even though — stated plainly, not papered over — i
 statistically indistinguishable from `defense_v3_lowcompute`'s 3/16 (~19%).
 `milestone1-fallback` and `milestone2-champion` both remain **unchanged** as safe
 rollback points.
+
+## 10. Milestone 4->5: adversarial countersearch specifically against `defense_v6_encryptor_fix`'s SUPPORT logic
+
+`docs/MILESTONE_4_REPORT.md` section 6 flagged an honest gap: the Milestone 4
+champion's new SUPPORT (Encryptor) placement/upgrade behavior had never been
+adversarially countersearched the way `defense_v4_tiebreak` was in section 8
+above. This section closes that gap. Full analysis and numbers in
+`docs/MILESTONE_5_REPORT.md`; this section covers the three new opponents in
+the same per-attempt format as sections 1-2/5/8.3 above.
+
+| Opponent | Targeted weakness (read directly from `defense_v6_encryptor_fix`'s source) | Result vs `defense_v6_encryptor_fix` |
+|---|---|---|
+| `opponents/support_sniper` | SUPPORT is the single most fragile structure type in the corrected config (30 HP, vs WALL 40/TURRET 75) and sits at a fixed, adaptively-detectable location. Scans `game_state.game_map` for enemy SUPPORT (same technique as `adaptive_reactive`/`escorted_combined_arms`), then sends escorted scout+demolisher waves at the detected column from turn 3 onward, sustained for the whole game. | **Rejected as an effective counter — 10/10 games lost by the attacker** (`experiments/results/20260715-033657_m5_v6fix_vs_support_sniper.jsonl`), consistently by turn 8-10, 0 crashes. Replay inspection (`m5_v6fix_vs_support_sniper_000.replay`): SUPPORT was present in only 128/835 frames and its recorded health never dropped below its full 30 HP in any frame — not because it survived heavy fire, but because these games resolve so fast (turn 8-10) that the champion's static core defense decides the outcome before the SUPPORT mechanism (or the sniping attempt against it) ever gets meaningfully exercised either way. |
+| `opponents/corner_lane_baiter` | The champion's own `_get_cached_lane`/`least_damage_spawn_location` heuristic has **zero awareness of the SUPPORT's shield radius** — it only minimizes projected turret damage along the path. SUPPORT sits at `[[13,9],[14,9]]`; the alternate lane option `[3,10]` is `sqrt(10^2+1^2)≈10.05` tiles away, outside even the upgraded 7-tile shield range. Pure static defense (no offense), deliberately dense across the center columns (x∈[6,21], where `[13,0]`'s path runs) and deliberately weak at the corners (where `[3,10]`'s path runs), to try to bait the heuristic into consistently picking the corner lane and never collecting the shield bonus. | **Rejected as tested — hypothesis about the mechanism is real, but this specific opponent design did not trigger it.** 10/10 games won by the champion, every single one ending at exactly turn 72, health 30.0 vs -2.0 (`experiments/results/20260715-033811_m5_v6fix_vs_corner_lane_baiter.jsonl`). Direct replay evidence (not inference): **936 `shield` events fired over the course of the game**, all from the SUPPORT pair at `[13,9]`/`[14,9]` onto scouts near `[14,2]`/`[15,3]` — i.e. the champion's offense kept using the *central* lane the entire game despite the deliberately asymmetric defense, so the SUPPORT bonus (`6.7` HP/unit, matching the Verified upgraded formula `4.0 + 0.3*9`) was applied continuously, not avoided. Running the identical opponent against the control (`defense_v4_tiebreak`/`m4_v4carry`) produced the **exact same 936 shield events** and the **exact same 30.0/-2.0 result in all 10 games** (`experiments/results/20260715-034234_m5_v4carry_vs_corner_lane_baiter.jsonl`) — confirming `v4carry`'s own (unupgraded, un-relocated) SUPPORT at `[13,3]` also shields the same central-lane scouts, just for less (`2.0` HP/unit, no `shieldBonusPerY` since never upgraded). The champion's lane choice was not redirected by this design; why the denser center didn't score worse than the sparser corner in the heuristic's own path-damage sum was not further isolated (an honest open sub-question, not resolved here). |
+| `opponents/shield_race_rusher` | SUPPORT upgrades strictly last in `upgrade_core`, after all 10 turret anchors and 12 wall cells — a real (if unverified until now) upgrade-timing window where it sits at weaker unupgraded stats. A real (not minimal) defense of its own, paired with a *sustained* (not one-off) central-lane rush starting turn 3, to maximize exposure to this window via a non-adaptive, "dumb but persistent" mechanism, as a cross-check on `support_sniper`'s more targeted approach. | **Rejected as an effective counter — 10/10 games lost by the attacker** (`experiments/results/20260715-033953_m5_v6fix_vs_shield_race_rusher.jsonl`), by turn 12-14, 0 crashes. Replay inspection (`m5_v6fix_vs_shield_race_rusher_000.replay`): SUPPORT present in 249/898 frames, health never below full 30, **zero shield events fired all game** — again, the match resolves (via the champion's static core alone) before the SUPPORT mechanism has enough turns to engage in either direction. The control (`v4carry`) produced statistically indistinguishable margins on the same opponent (`experiments/results/20260715-034422_m5_v4carry_vs_shield_race_rusher.jsonl`) — turn counts and health margins overlap within the noise expected from the interceptor-placement randomness both share, no systematic gap either way. |
+
+**Honest overall verdict: no exploitable weakness found.** All three
+purpose-built opponents lost 10/10 (or, for `corner_lane_baiter`, "won" 0/10
+in the sense of never even redirecting the champion's lane choice), 0
+crashes anywhere, in both p1/p2 seats. Per the standing acceptance
+discipline, this is a genuine negative result, not proof the design is
+flawless: it means three specific, reasoned, adaptively-built attack
+mechanisms (direct structural sniping, lane-routing baiting, sustained
+timing-window pressure) did not find a regression relative to
+`defense_v4_tiebreak`, under real n=10-per-opponent sampling in both seats —
+see `docs/MILESTONE_5_REPORT.md` section 4 for what remains untested.
+`baselines/defense_v6_encryptor_fix` (`milestone4-champion`) is **not**
+patched and **not** replaced; it remains the champion. `milestone1-fallback`,
+`milestone2-champion`, and `milestone3-champion` all remain **unchanged** as
+safe rollback points.
