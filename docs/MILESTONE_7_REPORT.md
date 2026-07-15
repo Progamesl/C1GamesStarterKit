@@ -275,14 +275,18 @@ sweep does not offset the real regressions found in §2.3.
   validation than is responsible to ship on the timeline remaining. Continuing
   to sink further iteration cycles into this one opponent, at this point, is
   a worse use of remaining effort than:
-  1. Broadening the public-opponent corpus further (two more real,
-     sourced-but-unrun repos remain flagged from Milestone 6 §7 —
-     `langsonzhang/Terminal-C1-Midwest-2022`'s and
-     `yip6ga1lok6/C1-Terminal-Summer-2022`'s siblings/other iterations, plus
-     any additional named-champion or high-placer search), which both
-     stress-tests the *current, working* champion further and has a much
-     better chance of surfacing genuinely new information per unit of effort
-     spent, or
+  1. Broadening the public-opponent corpus further via genuinely new sources
+     (checked as part of this same follow-up: `langsonzhang/Terminal-C1-Midwest-2022`
+     and `yip6ga1lok6/C1-Terminal-Summer-2022`, previously flagged in
+     Milestone 6 §7 as "not yet run," turn out to already be fully covered —
+     both were actually benchmarked in the M6-round-2 follow-up as
+     `funnel_uoft`/`summer2022_6th` respectively (both 10/10), and both
+     GitHub accounts were re-checked directly this milestone and confirmed
+     to have no other Terminal repo to find. The real remaining avenue is a
+     fresh named-champion/high-placer search, or sourcing entirely new
+     repos not yet identified at all), which both stress-tests the
+     *current, working* champion further and has a much better chance of
+     surfacing genuinely new information per unit of effort spent, or
   2. Final freeze/consolidation prep on the current champion, given it is
      now empirically the most robust candidate produced across all 7
      milestones (loses to exactly 1 of 28 tested opponents, with zero

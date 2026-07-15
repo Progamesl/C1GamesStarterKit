@@ -355,7 +355,10 @@ steps.
   `yip6ga1lok6/C1-Terminal-Summer-2022`) were vetted as real/non-stub but not
   benchmarked this milestone — deprioritized once the Travelling Salesmen
   loss surfaced as clearly the highest-value finding, not exhausted as an
-  avenue.
+  avenue. **Update: both were actually run in the same-day follow-up (§8) and
+  again re-confirmed in Milestone 7 — this bullet is stale as of that
+  follow-up, kept here only for the historical record of what this
+  milestone itself did and didn't cover.**
 - **No former Global Championship winner's actual code was found** (§1.1) —
   this remains, as flagged in `docs/STRATEGIC_PRIOR_ART_REPORT.md`, a hard
   ceiling on how far local black-box testing can go; the organizer norm of
@@ -365,3 +368,33 @@ steps.
   `terminal.c1games.com/playgroundlive` testing) remains separately thin,
   single-sourced, and unreproducible by this agent** — unaffected by this
   milestone's work, still an open gap in its own right.
+
+---
+
+## 8. Follow-up (same day, "round 2"): the two deprioritized repos, actually run
+
+Both repos flagged as deprioritized-not-exhausted in §7 were sourced, vetted,
+and benchmarked in a same-day follow-up round:
+
+| Local name | Source repo | Real placement claim | Result vs. `milestone5-champion` (n=10, both seats) |
+|---|---|---|---|
+| `public_opponents/funnel_uoft` | [`langsonzhang/Terminal-C1-Midwest-2022`](https://github.com/langsonzhang/Terminal-C1-Midwest-2022) ("Murphy's Lawyers," UofT) | #5 of 24 teams, C1 Midwest Spring 2022 | **WON 10/10**, both seats, no crashes — fastest, most lopsided sweep of any independent opponent tested (mean 10 turns) |
+| `public_opponents/summer2022_6th` | [`yip6ga1lok6/C1-Terminal-Summer-2022`](https://github.com/yip6ga1lok6/C1-Terminal-Summer-2022) | 6th of 91 teams, Summer Invitational 2022 | **WON 10/10**, both seats, no crashes (mean 56 turns — a real, drawn-out engagement) |
+
+Full detail (config-mismatch caveats, license/sourcing) in
+`docs/STRATEGIC_PRIOR_ART_REPORT.md` source-log #15/#16,
+`docs/COMPLIANCE_REPORT.md`, and `docs/REAL_OPPONENT_RESULTS.md` §7.
+
+**Milestone 7 re-confirmation (per the user's explicit follow-up request):**
+before doing any further sourcing work, both GitHub accounts
+(`langsonzhang`, `yip6ga1lok6`) were checked directly for any *other*
+Terminal-related repos that might represent a later/different iteration
+(the exact mistake Milestone 6 §1.3 caught and corrected for the Travelling
+Salesmen repo, checked for here too rather than assumed not to apply). Both
+accounts have **exactly one** Terminal repo each (10 and 11 public repos
+respectively, the rest unrelated coursework/personal projects) — there is no
+other iteration to find. **`funnel_uoft` and `summer2022_6th` are the
+complete, exhaustive coverage of both named sources; no further benchmarking
+of these two specific repos is possible or needed.** Both results (10/10
+each) stand unchanged and are re-confirmed by the champion's continued clean
+performance against them throughout Milestone 7's full regression re-runs.

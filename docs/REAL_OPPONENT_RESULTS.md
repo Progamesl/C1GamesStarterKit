@@ -372,6 +372,17 @@ how much the result should update our confidence about the *broader* pattern
 of "will decent human-designed bots beat us," not whether these two specific
 recorded wins are real.
 
+**Milestone 7 addendum:** re-checked directly whether `langsonzhang` or
+`yip6ga1lok6` have any *other* Terminal-related repos representing a later or
+different iteration of their algo (the exact "which iteration is actually the
+one that placed" mistake §1.3/Milestone 6 caught for the Travelling Salesmen
+repo, checked here rather than assumed not to apply). Both GitHub accounts
+have exactly one Terminal repo each — `funnel_uoft` and `summer2022_6th` are
+the complete, exhaustive local coverage of both sources, both still 10/10
+against `milestone5-champion`, re-confirmed again in Milestone 7's full
+regression re-runs. No further benchmarking of these two specific sources is
+possible.
+
 ### 7.3 One repo found, deliberately not benchmarked, with an honest reason
 
 `wllmzhu/alpha-terminal` (an RL/policy-gradient agent, previously flagged in
