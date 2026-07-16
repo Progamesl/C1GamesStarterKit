@@ -21,7 +21,17 @@ import sys
 
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-V6_DIR = os.path.join(REPO_ROOT, "baselines", "defense_v6_encryptor_fix")
+CANDIDATE_DIR = os.path.dirname(os.path.abspath(__file__))
+LOCAL_V6_DIR = os.path.join(CANDIDATE_DIR, "v6_base")
+REPO_V6_DIR = os.path.join(REPO_ROOT, "baselines", "defense_v6_encryptor_fix")
+# Submission packages include a local v6_base copy so this thin, auditable
+# mechanism diff is self-contained. Repository experiments continue to use the
+# canonical accepted baseline directly.
+V6_DIR = (
+    LOCAL_V6_DIR
+    if os.path.isfile(os.path.join(LOCAL_V6_DIR, "algo_strategy.py"))
+    else REPO_V6_DIR
+)
 sys.path.insert(0, V6_DIR)
 _SPEC = importlib.util.spec_from_file_location(
     "milestone9_dense_v6_base", os.path.join(V6_DIR, "algo_strategy.py")
