@@ -2,9 +2,15 @@
 
 *.jar binary
 
+*.zip binary
+
 *.exe binary
 
 *scripts/zipalgo_mac binary
 
 *scripts/zipalgo_linux binary
+
+*scripts/test_algo_mac binary
+
+*scripts/test_algo_linux binary
 
