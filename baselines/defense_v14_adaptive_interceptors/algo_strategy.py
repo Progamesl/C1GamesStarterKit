@@ -86,8 +86,7 @@ SPEND_PROFILES = {
 STARTUP_SCREEN_LAST_TURN = 4
 DEMO_CONFIRM_TURNS = 2
 DEMO_DECAY_TURNS = 2
-SCOUT_FIRST_BURST_WATCH = 6
-SCOUT_CADENCE_TOLERANCE = 1
+SCOUT_CADENCE_TOLERANCE = 0
 
 
 class AlgoStrategy(v6.AlgoStrategy):
@@ -126,7 +125,7 @@ class AlgoStrategy(v6.AlgoStrategy):
 
         self.last_scout_burst_turn = None
         self.scout_burst_interval = None
-        self.scout_watch_until = -1
+        self.scout_estimated_interval = None
         self.scout_burst_flanks = []
         self.current_turn = 0
 
@@ -153,6 +152,30 @@ class AlgoStrategy(v6.AlgoStrategy):
         # Rotate 180 degrees to express the reciprocal friendly edge cell.
         mirrored_x = 27 - int(origin[0])
         return "left" if mirrored_x < 14 else "right"
+
+    def _estimate_scout_refill_turns(self, burst_count):
+        """Estimate the earliest repeat of an all-in Scout burst.
+
+        Mobile units do not persist into the next turn, so a large screen one
+        turn *after* a completed burst cannot hit that burst. The first sweep
+        verified that such post-hoc screens attacked nothing and drained the MP
+        needed when the next wave actually arrived. Before a second sample gives
+        us observed cadence, use only public resource rules and wave size to
+        estimate the earliest plausible refill turn.
+        """
+        resources = self.config.get("resources", {})
+        income = float(resources.get("bitsPerRound", 5.0))
+        decay = float(resources.get("bitDecayPerRound", 0.25))
+
+        # Conservatively allow one normal turn of MP to remain after the burst.
+        # This predicts the earliest repeat rather than assuming the enemy spent
+        # literally its final point.
+        bank = income
+        for gap in range(1, 13):
+            bank = bank * (1.0 - decay) + income
+            if bank >= burst_count:
+                return gap
+        return 12
 
     def _consume_attack_history(self, current_turn):
         for turn in range(self.last_history_turn + 1, current_turn):
@@ -208,8 +231,12 @@ class AlgoStrategy(v6.AlgoStrategy):
                     # observed cadence rather than assuming replay_stack's five.
                     if 2 <= interval <= 12:
                         self.scout_burst_interval = interval
+                else:
+                    burst_count = sum(scout_counts.values())
+                    self.scout_estimated_interval = self._estimate_scout_refill_turns(
+                        burst_count
+                    )
                 self.last_scout_burst_turn = turn
-                self.scout_watch_until = turn + SCOUT_FIRST_BURST_WATCH
                 self.scout_burst_flanks = burst_flanks
 
         self.last_history_turn = max(self.last_history_turn, current_turn - 1)
@@ -246,27 +273,25 @@ class AlgoStrategy(v6.AlgoStrategy):
                 flanks.add(flank)
 
         if self.last_scout_burst_turn is not None:
-            if self.scout_burst_interval is None:
-                # With only one sample cadence is unknowable. Maintain a bounded
-                # screen until either another sample reveals it or the watch ends.
-                # The trajectory sweep showed that using only the previous flank
-                # simply chased replay_stack one burst behind: its next large wave
-                # arrived on the opposite side and the Interceptors recorded zero
-                # attacks. Until a stable lane is observed, cover both legal
-                # flanks and split the same bounded budget between them.
-                if turn <= self.scout_watch_until:
-                    modes.append("scout-first-watch")
-                    flanks.update(("left", "right"))
-                    emergency = True
-            else:
-                expected = self.last_scout_burst_turn + self.scout_burst_interval
-                if abs(turn - expected) <= SCOUT_CADENCE_TOLERANCE:
-                    modes.append("scout-cadence")
-                    # Multiple observed bursts established cadence but also
-                    # demonstrated lane variation, so cadence predicts WHEN,
-                    # not safely WHERE. Preserve two-flank coverage.
-                    flanks.update(("left", "right"))
-                    emergency = True
+            interval = (
+                self.scout_burst_interval
+                if self.scout_burst_interval is not None
+                else self.scout_estimated_interval
+            )
+            expected = self.last_scout_burst_turn + interval
+            if abs(turn - expected) <= SCOUT_CADENCE_TOLERANCE:
+                modes.append(
+                    "scout-cadence"
+                    if self.scout_burst_interval is not None
+                    else "scout-estimated"
+                )
+                # The trajectory sweep showed that using only the previous
+                # flank chased replay_stack one burst behind: the next large
+                # wave arrived opposite and the Interceptors attacked nothing.
+                # Cadence predicts WHEN, not safely WHERE, so split the same
+                # bounded budget across both legal flanks.
+                flanks.update(("left", "right"))
+                emergency = True
 
         if not flanks:
             return None
@@ -294,7 +319,8 @@ class AlgoStrategy(v6.AlgoStrategy):
             spawned += game_state.attempt_spawn(v6.INTERCEPTOR, location, 1)
         gamelib.debug_write(
             "M9_SCREEN turn={} mode={} flanks={} budget={} spawned={} "
-            "locations={} demo_streak={} scout_last={} scout_interval={}".format(
+            "locations={} demo_streak={} scout_last={} scout_interval={} "
+            "scout_estimate={}".format(
                 game_state.turn_number,
                 mode,
                 flanks,
@@ -304,6 +330,7 @@ class AlgoStrategy(v6.AlgoStrategy):
                 self.demo_streak,
                 self.last_scout_burst_turn,
                 self.scout_burst_interval,
+                self.scout_estimated_interval,
             )
         )
         return spawned
