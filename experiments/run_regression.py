@@ -78,6 +78,10 @@ DEFAULT_OPPONENTS = [
     "opponents/alternating_corner_rush",
     "opponents/dual_corner_rush",
     "opponents/scout_demolisher_corner_mix",
+    # Uploaded-replay-derived stress test: 18-turret opening, permanent
+    # upgraded shield corridors, and sparse all-in adaptive Scout bursts.
+    # This is compositionally independent from v33's continuous Demolishers.
+    "opponents/replay_shield_stack",
 ]
 
 
