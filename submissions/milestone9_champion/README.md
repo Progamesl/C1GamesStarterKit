@@ -24,22 +24,35 @@ evidence.
 
 ## Package
 
-- `defense_v15_dense_opening_algo_folder/` — unpacked, self-contained folder.
-- `defense_v15_dense_opening_permfix.zip` — recommended upload archive; preserves
-  `run.sh` as executable.
+- `defense_v15_dense_opening_flat_algo_folder/` — **recommended** unpacked
+  package. It has the full strategy in one top-level `algo_strategy.py` and a
+  top-level `gamelib/`; it has no dynamic import or nested strategy dependency.
+- `defense_v15_dense_opening_flat_permfix.zip` — **recommended upload
+  archive**; deterministic and preserves `run.sh` as executable.
+- `defense_v15_dense_opening_algo_folder/` and
+  `defense_v15_dense_opening_permfix.zip` — original nested package, retained
+  for provenance only.
 
-The thin candidate wrapper loads `v6_base/` included inside the package, so it
-does not depend on repository paths after upload.
+The original package's thin wrapper imports its bundled `v6_base/`. It works
+when the directory tree is preserved, but a simulation that removed
+`v6_base/` (matching a portal that flattens or ignores nested files) failed
+before game start with `FileNotFoundError`. The portal's actual handling is
+not locally observable, so the flattened package removes that avoidable risk
+before another website test.
 
-Archive SHA-256:
+Flattened archive SHA-256:
 
 ```text
-e39e6df78fc74465507345fb3191be2e6ac92317339d5261d65eef22848f96cb
+0d262970cb5c27168884d2cbff4a560f8f5b600dcb20350b22be756b245acc7d
 ```
 
-**Verified:** the archive passed `unzip -t`; a clean extraction retained
-`run.sh` mode `0755`; without any manual `chmod`, the extracted package
-completed and won a real local match against `python-algo`.
+**Verified:** the flattened archive passed `unzip -t`; a fresh extraction
+retained `run.sh` mode `0755` and contained no `v6_base/`. Without manual
+changes, that extraction completed four real local games: 2/2 wins against
+`travelling_salesmen_v33` and the same expected 0/2 result against the newly
+uploaded stress opponent, with zero crashes. This matching strategy behavior
+shows that the uploaded-opponent loss is reproducible with the flattened
+package and is not explained solely by the old nested import.
 
 ## Rollback
 
