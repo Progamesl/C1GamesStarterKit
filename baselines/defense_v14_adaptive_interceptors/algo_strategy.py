@@ -249,15 +249,23 @@ class AlgoStrategy(v6.AlgoStrategy):
             if self.scout_burst_interval is None:
                 # With only one sample cadence is unknowable. Maintain a bounded
                 # screen until either another sample reveals it or the watch ends.
+                # The trajectory sweep showed that using only the previous flank
+                # simply chased replay_stack one burst behind: its next large wave
+                # arrived on the opposite side and the Interceptors recorded zero
+                # attacks. Until a stable lane is observed, cover both legal
+                # flanks and split the same bounded budget between them.
                 if turn <= self.scout_watch_until:
                     modes.append("scout-first-watch")
-                    flanks.update(self.scout_burst_flanks)
+                    flanks.update(("left", "right"))
                     emergency = True
             else:
                 expected = self.last_scout_burst_turn + self.scout_burst_interval
                 if abs(turn - expected) <= SCOUT_CADENCE_TOLERANCE:
                     modes.append("scout-cadence")
-                    flanks.update(self.scout_burst_flanks)
+                    # Multiple observed bursts established cadence but also
+                    # demonstrated lane variation, so cadence predicts WHEN,
+                    # not safely WHERE. Preserve two-flank coverage.
+                    flanks.update(("left", "right"))
                     emergency = True
 
         if not flanks:

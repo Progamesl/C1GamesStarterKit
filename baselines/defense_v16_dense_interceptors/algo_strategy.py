@@ -51,6 +51,44 @@ class AlgoStrategy(adaptive.AlgoStrategy):
             [7, 12], [8, 11], [10, 11], [9, 10],
         ]
 
+    def _screen_plan(self, game_state):
+        plan = super()._screen_plan(game_state)
+        if plan is None:
+            return None
+        mode, flanks, budget = plan
+
+        # Bisection of combined-v1's v33 regression: dense-only won quickly,
+        # while dense+screen survived much longer but never attacked because
+        # mechanism A intentionally banked every leftover MP. During sustained
+        # Demolisher pressure (not a Scout emergency), reserve v6's normal
+        # 9-MP offense threshold on even turns. Odd turns still devote the
+        # selected full fraction to the screen.
+        if (
+            "sustained-demo" in mode
+            and "scout" not in mode
+            and game_state.turn_number >= 6
+            and game_state.turn_number % 2 == 0
+        ):
+            mp = int(game_state.get_resource(v6.MP))
+            budget = min(budget, max(1, mp - 9))
+        return mode, flanks, budget
+
+    def opportunistic_offense(self, game_state):
+        plan = self._screen_plan(game_state)
+        if plan is None:
+            return v6.AlgoStrategy.opportunistic_offense(self, game_state)
+
+        mode, flanks, budget = plan
+        self._deploy_screen(game_state, mode, flanks, budget)
+        if (
+            "sustained-demo" in mode
+            and "scout" not in mode
+            and game_state.turn_number >= 6
+        ):
+            # The reserve above makes this a real v6 attack on even turns;
+            # v6 naturally does nothing offensive on odd turns.
+            return v6.AlgoStrategy.opportunistic_offense(self, game_state)
+
     def _dense_opening_intact(self, game_state):
         return all(
             game_state.contains_stationary_unit(location)
